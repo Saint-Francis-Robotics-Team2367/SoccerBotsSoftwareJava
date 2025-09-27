@@ -33,12 +33,14 @@ public class NetworkPanel extends ThemedComponent {
     private Timer networkStatsTimer;
 
     public NetworkPanel(NetworkManager networkManager) {
-        super();
+        super(); // This will call applyTheme, but we need to handle null components
         this.networkManager = networkManager;
         initializeComponents();
         layoutComponents();
         setupEventHandlers();
         updateUIElements();
+        // Apply theme again after components are initialized
+        applyTheme(themeManager.getCurrentTheme());
     }
 
     private void initializeComponents() {
@@ -360,9 +362,11 @@ public class NetworkPanel extends ThemedComponent {
         // Apply theme to all components
         applyThemeToComponent(this, theme);
 
-        // Special handling for signal strength bar
-        signalStrengthBar.setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
-        signalStrengthBar.setForeground(theme.getColor(Theme.ACCENT));
+        // Special handling for signal strength bar (only if initialized)
+        if (signalStrengthBar != null) {
+            signalStrengthBar.setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
+            signalStrengthBar.setForeground(theme.getColor(Theme.ACCENT));
+        }
     }
 
     @Override

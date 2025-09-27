@@ -21,7 +21,7 @@ public class RobotStatusPanel extends ThemedComponent {
     private final JPanel robotListPanel;
 
     public RobotStatusPanel() {
-        super();
+        super(); // This will call applyTheme, but we need to handle null components
         robotStatuses = new HashMap<>();
 
         setLayout(new BorderLayout());
@@ -34,6 +34,9 @@ public class RobotStatusPanel extends ThemedComponent {
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         add(scrollPane, BorderLayout.CENTER);
+
+        // Apply theme again after components are initialized
+        applyTheme(themeManager.getCurrentTheme());
 
         // Update timer
         Timer updateTimer = new Timer(1000, e -> updateDisplay());
@@ -104,9 +107,14 @@ public class RobotStatusPanel extends ThemedComponent {
             theme.getColor(Theme.FOREGROUND)
         ));
 
-        robotListPanel.setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
-        scrollPane.setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
-        scrollPane.getViewport().setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
+        // Apply theme to components only if they exist
+        if (robotListPanel != null) {
+            robotListPanel.setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
+        }
+        if (scrollPane != null) {
+            scrollPane.setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
+            scrollPane.getViewport().setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
+        }
     }
 
     private static class RobotStatus {

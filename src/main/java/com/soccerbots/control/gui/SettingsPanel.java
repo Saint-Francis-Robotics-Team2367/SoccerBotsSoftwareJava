@@ -10,8 +10,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 
 public class SettingsPanel extends ThemedComponent {
-    private final ThemeManager themeManager;
-
     private JComboBox<String> themeComboBox;
     private JSlider fontSizeSlider;
     private JLabel fontSizeLabel;
@@ -19,12 +17,13 @@ public class SettingsPanel extends ThemedComponent {
     private JButton resetButton;
 
     public SettingsPanel() {
-        super();
-        this.themeManager = ThemeManager.getInstance();
+        super(); // This will call applyTheme, but we need to handle null components
         initializeComponents();
         layoutComponents();
         setupEventHandlers();
         updatePreview();
+        // Apply theme again after components are initialized
+        applyTheme(themeManager.getCurrentTheme());
     }
 
     private void initializeComponents() {
@@ -141,22 +140,31 @@ public class SettingsPanel extends ThemedComponent {
     @Override
     protected void applyTheme(Theme theme) {
         setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
-        setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(theme.getColor(Theme.BORDER)),
-            "Appearance Settings",
-            0, 0,
-            themeManager.getFont(-1),
-            theme.getColor(Theme.FOREGROUND)
-        ));
+
+        // Only set border if themeManager is available
+        if (themeManager != null) {
+            setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(theme.getColor(Theme.BORDER)),
+                "Appearance Settings",
+                0, 0,
+                themeManager.getFont(-1),
+                theme.getColor(Theme.FOREGROUND)
+            ));
+        }
 
         // Apply theme to all components
         applyThemeToComponent(this, theme);
 
-        // Special handling for slider
-        fontSizeSlider.setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
-        fontSizeSlider.setForeground(theme.getColor(Theme.PANEL_FOREGROUND));
+        // Special handling for slider (only if initialized)
+        if (fontSizeSlider != null) {
+            fontSizeSlider.setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
+            fontSizeSlider.setForeground(theme.getColor(Theme.PANEL_FOREGROUND));
+        }
 
-        updatePreview();
+        // Only update preview if components are initialized
+        if (previewLabel != null && themeManager != null) {
+            updatePreview();
+        }
     }
 
     @Override
