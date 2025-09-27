@@ -188,7 +188,6 @@ public class MainWindow extends JFrame {
                         "A low-latency control system for ESP32-based soccer robots.\n\n" +
                         "Features:\n" +
                         "• WiFi network management\n" +
-                        "• Bluetooth robot configuration\n" +
                         "• Multiple robot control\n" +
                         "• Controller pairing & mapping\n" +
                         "• Real-time status monitoring\n" +

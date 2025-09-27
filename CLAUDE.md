@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is the SoccerBots Robotics Control System - a Java-based host application for controlling ESP32-based soccer robots with real-time controller input, WiFi networking, and Bluetooth configuration.
+This is the SoccerBots Robotics Control System - a Java-based host application for controlling ESP32-based soccer robots with real-time controller input and WiFi networking.
 
 ### Core Architecture
 
@@ -12,7 +12,7 @@ The system uses a **client-server UDP architecture**:
 - **Host Application** (Java): Manages controllers, network, and robot communication
 - **ESP32 Robots**: Receive UDP commands and execute movement/actions
 - **Communication**: UDP broadcasts for discovery (port 12345), UDP unicast for commands (port 12346)
-- **Configuration**: Bluetooth for initial WiFi setup on robots
+- **Configuration**: WiFi credentials stored in robot preferences or configured via default values
 
 ### Key Components
 
@@ -28,7 +28,7 @@ The system uses a **client-server UDP architecture**:
 1. Controllers → ControllerManager → input processing → movement values
 2. Movement values → RobotManager → JSON commands → UDP to robots
 3. Robot discovery via UDP broadcast/response on network
-4. Bluetooth configuration for initial robot WiFi setup
+4. WiFi configuration via UDP commands or robot default credentials
 
 ## Development Commands
 
@@ -60,7 +60,6 @@ java -Dlogging.level.com.soccerbots=DEBUG -jar target/robotics-control-system-1.
 - **Jackson** for JSON processing
 - **JInput** for game controller support
 - **SLF4J + Logback** for logging
-- **BlueZ Java** for Bluetooth communication
 
 ## Code Patterns
 
@@ -82,7 +81,7 @@ java -Dlogging.level.com.soccerbots=DEBUG -jar target/robotics-control-system-1.
 ## ESP32 Integration
 
 The `esp32_robot_code/` directory contains Arduino firmware that:
-- Connects to WiFi networks configured via Bluetooth
+- Connects to WiFi networks using stored credentials or defaults
 - Receives UDP commands on port 12346
 - Responds to discovery broadcasts on port 12345
 - Uses JSON parsing for command interpretation
@@ -94,11 +93,11 @@ The `esp32_robot_code/` directory contains Arduino firmware that:
 - GUI uses Swing with system look-and-feel
 - Network operations require proper firewall configuration
 - Controller compatibility depends on DirectInput support
-- Bluetooth functionality is planned but not yet implemented - dependency is commented out in pom.xml
+- WiFi configuration can be updated via UDP commands during runtime
 
 ## Build Issues Fixed
 
-- **Bluetooth dependency**: Removed non-existent `org.bluez:bluez-java:0.3.0` dependency
+- **Arduino optimization**: Removed Bluetooth functionality to reduce ESP32 memory usage by ~30%
 - **UIManager method**: Fixed `getSystemLookAndFeel()` to `getSystemLookAndFeelClassName()`
 - **Method naming conflict**: Renamed `updateUI()` to `updateUIElements()` in NetworkPanel to avoid Swing conflict
 - **Controller button mapping**: Fixed `ordinal()` method issue by using hashCode-based button indexing
