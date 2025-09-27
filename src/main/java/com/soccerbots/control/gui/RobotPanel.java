@@ -2,6 +2,8 @@ package com.soccerbots.control.gui;
 
 import com.soccerbots.control.robot.Robot;
 import com.soccerbots.control.robot.RobotManager;
+import com.soccerbots.control.gui.theme.Theme;
+import com.soccerbots.control.gui.theme.ThemedComponent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +16,7 @@ import java.awt.event.ActionEvent;
 import java.util.List;
 import java.util.ArrayList;
 
-public class RobotPanel extends JPanel {
+public class RobotPanel extends ThemedComponent {
     private static final Logger logger = LoggerFactory.getLogger(RobotPanel.class);
     
     private final RobotManager robotManager;
@@ -27,6 +29,7 @@ public class RobotPanel extends JPanel {
     private JLabel robotCountLabel;
     
     public RobotPanel(RobotManager robotManager) {
+        super();
         this.robotManager = robotManager;
         initializeComponents();
         layoutComponents();
@@ -271,5 +274,31 @@ public class RobotPanel extends JPanel {
         public Robot getRobotAt(int rowIndex) {
             return rowIndex >= 0 && rowIndex < robots.size() ? robots.get(rowIndex) : null;
         }
+    }
+
+    @Override
+    protected void applyTheme(Theme theme) {
+        setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
+        setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(theme.getColor(Theme.BORDER)),
+            "Robot Management",
+            0, 0,
+            themeManager.getFont(-1),
+            theme.getColor(Theme.FOREGROUND)
+        ));
+
+        // Apply theme to table
+        if (robotTable != null) {
+            robotTable.setBackground(theme.getColor(Theme.BACKGROUND));
+            robotTable.setForeground(theme.getColor(Theme.FOREGROUND));
+            robotTable.setFont(themeManager.getFont(0));
+            robotTable.setSelectionBackground(theme.getColor(Theme.SELECTION_BACKGROUND));
+            robotTable.setSelectionForeground(theme.getColor(Theme.SELECTION_FOREGROUND));
+            robotTable.getTableHeader().setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
+            robotTable.getTableHeader().setForeground(theme.getColor(Theme.PANEL_FOREGROUND));
+        }
+
+        // Apply theme to all components
+        applyThemeToComponent(this, theme);
     }
 }

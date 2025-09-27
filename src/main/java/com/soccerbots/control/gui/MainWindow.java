@@ -3,6 +3,8 @@ package com.soccerbots.control.gui;
 import com.soccerbots.control.network.NetworkManager;
 import com.soccerbots.control.robot.RobotManager;
 import com.soccerbots.control.controller.ControllerManager;
+import com.soccerbots.control.gui.theme.ThemeManager;
+import com.soccerbots.control.gui.monitoring.RobotStatusPanel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,13 +19,17 @@ public class MainWindow extends JFrame {
     private NetworkManager networkManager;
     private RobotManager robotManager;
     private ControllerManager controllerManager;
-    
+    private ThemeManager themeManager;
+
     private NetworkPanel networkPanel;
     private RobotPanel robotPanel;
     private ControllerPanel controllerPanel;
     private StatusPanel statusPanel;
     private GameTimerPanel gameTimerPanel;
     private JButton emergencyStopButton;
+    private RobotStatusPanel robotStatusPanel;
+    private SettingsPanel settingsPanel;
+    private JTabbedPane rightTabbedPane;
     
     public MainWindow() {
         initializeManagers();
@@ -32,6 +38,7 @@ public class MainWindow extends JFrame {
     }
     
     private void initializeManagers() {
+        themeManager = ThemeManager.getInstance();
         networkManager = new NetworkManager();
         robotManager = new RobotManager(networkManager);
         controllerManager = new ControllerManager(robotManager);
@@ -40,18 +47,20 @@ public class MainWindow extends JFrame {
     private void initializeGUI() {
         setTitle("SoccerBots Robotics Control System v1.0");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1200, 800);
+        setSize(1400, 900);
         setLocationRelativeTo(null);
-        
+
         setLayout(new BorderLayout());
-        
+
         createMenuBar();
         createMainPanels();
         layoutComponents();
-        
+
         statusPanel = new StatusPanel();
         add(statusPanel, BorderLayout.SOUTH);
-        
+
+        // Apply initial theme
+        applyTheme();
         updateStatusConnections();
     }
     
@@ -63,12 +72,18 @@ public class MainWindow extends JFrame {
         exitItem.addActionListener(e -> System.exit(0));
         fileMenu.add(exitItem);
         
+        JMenu settingsMenu = new JMenu("Settings");
+        JMenuItem themeItem = new JMenuItem("Appearance");
+        themeItem.addActionListener(e -> showSettingsDialog());
+        settingsMenu.add(themeItem);
+
         JMenu helpMenu = new JMenu("Help");
         JMenuItem aboutItem = new JMenuItem("About");
         aboutItem.addActionListener(e -> showAboutDialog());
         helpMenu.add(aboutItem);
-        
+
         menuBar.add(fileMenu);
+        menuBar.add(settingsMenu);
         menuBar.add(helpMenu);
         
         setJMenuBar(menuBar);
@@ -79,11 +94,11 @@ public class MainWindow extends JFrame {
         robotPanel = new RobotPanel(robotManager);
         controllerPanel = new ControllerPanel(controllerManager);
         gameTimerPanel = new GameTimerPanel(controllerManager);
+        robotStatusPanel = new RobotStatusPanel();
+        settingsPanel = new SettingsPanel();
 
         // Create emergency stop button
         emergencyStopButton = new JButton("EMERGENCY STOP");
-        emergencyStopButton.setBackground(Color.RED);
-        emergencyStopButton.setForeground(Color.WHITE);
         emergencyStopButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
         emergencyStopButton.setPreferredSize(new Dimension(200, 40));
         emergencyStopButton.addActionListener(this::handleEmergencyStop);
@@ -104,10 +119,17 @@ public class MainWindow extends JFrame {
         emergencyPanel.add(emergencyStopButton);
         leftPanel.add(emergencyPanel, BorderLayout.SOUTH);
 
-        leftPanel.setPreferredSize(new Dimension(400, 0));
+        leftPanel.setPreferredSize(new Dimension(420, 0));
+
+        // Create right tabbed pane for monitoring and settings
+        rightTabbedPane = new JTabbedPane();
+        rightTabbedPane.addTab("Robots", robotPanel);
+        rightTabbedPane.addTab("Robot Status", robotStatusPanel);
+        rightTabbedPane.addTab("Settings", settingsPanel);
+        rightTabbedPane.setPreferredSize(new Dimension(500, 0));
 
         add(leftPanel, BorderLayout.WEST);
-        add(robotPanel, BorderLayout.CENTER);
+        add(rightTabbedPane, BorderLayout.CENTER);
     }
     
     private void setupEventHandlers() {
@@ -120,6 +142,9 @@ public class MainWindow extends JFrame {
         
         Timer statusUpdateTimer = new Timer(1000, e -> updateStatusConnections());
         statusUpdateTimer.start();
+
+        // Setup theme change listener
+        themeManager.addThemeChangeListener(theme -> SwingUtilities.invokeLater(this::applyTheme));
     }
 
     private void handleEmergencyStop(java.awt.event.ActionEvent e) {
@@ -129,7 +154,7 @@ public class MainWindow extends JFrame {
             // Deactivate emergency stop
             controllerManager.deactivateEmergencyStop();
             emergencyStopButton.setText("EMERGENCY STOP");
-            emergencyStopButton.setBackground(Color.RED);
+            emergencyStopButton.setBackground(themeManager.getCurrentTheme().getColor(com.soccerbots.control.gui.theme.Theme.ERROR));
             logger.info("Emergency stop deactivated by user");
         } else {
             // Activate emergency stop
@@ -144,7 +169,7 @@ public class MainWindow extends JFrame {
             if (result == JOptionPane.YES_OPTION) {
                 controllerManager.activateEmergencyStop();
                 emergencyStopButton.setText("RESUME CONTROL");
-                emergencyStopButton.setBackground(Color.ORANGE);
+                emergencyStopButton.setBackground(themeManager.getCurrentTheme().getColor(com.soccerbots.control.gui.theme.Theme.WARNING));
                 logger.warn("Emergency stop activated by user");
             }
         }
@@ -168,9 +193,45 @@ public class MainWindow extends JFrame {
                         "• Controller pairing & mapping\n" +
                         "• Real-time status monitoring\n" +
                         "• Emergency stop control\n" +
-                        "• Game timer with auto-stop";
+                        "• Game timer with auto-stop\n" +
+                        "• Customizable themes\n" +
+                        "• Network traffic monitoring\n" +
+                        "• Robot connectivity status";
 
         JOptionPane.showMessageDialog(this, message, "About", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void showSettingsDialog() {
+        rightTabbedPane.setSelectedComponent(settingsPanel);
+    }
+
+    private void applyTheme() {
+        com.soccerbots.control.gui.theme.Theme theme = themeManager.getCurrentTheme();
+
+        // Apply theme to main window
+        getContentPane().setBackground(theme.getColor(com.soccerbots.control.gui.theme.Theme.BACKGROUND));
+
+        // Apply theme to menu bar
+        JMenuBar menuBar = getJMenuBar();
+        if (menuBar != null) {
+            menuBar.setBackground(theme.getColor(com.soccerbots.control.gui.theme.Theme.PANEL_BACKGROUND));
+            menuBar.setForeground(theme.getColor(com.soccerbots.control.gui.theme.Theme.PANEL_FOREGROUND));
+        }
+
+        // Apply theme to emergency stop button
+        boolean isEmergencyActive = controllerManager != null && controllerManager.isEmergencyStopActive();
+        if (isEmergencyActive) {
+            emergencyStopButton.setBackground(theme.getColor(com.soccerbots.control.gui.theme.Theme.WARNING));
+        } else {
+            emergencyStopButton.setBackground(theme.getColor(com.soccerbots.control.gui.theme.Theme.ERROR));
+        }
+        emergencyStopButton.setForeground(Color.WHITE);
+
+        // Apply theme to tabbed pane
+        rightTabbedPane.setBackground(theme.getColor(com.soccerbots.control.gui.theme.Theme.PANEL_BACKGROUND));
+        rightTabbedPane.setForeground(theme.getColor(com.soccerbots.control.gui.theme.Theme.PANEL_FOREGROUND));
+
+        repaint();
     }
     
     private void cleanup() {
