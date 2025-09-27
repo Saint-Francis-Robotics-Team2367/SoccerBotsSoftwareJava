@@ -161,7 +161,8 @@ public class ControllerManager {
                     break;
                 default:
                     if (component.getIdentifier() instanceof Component.Identifier.Button) {
-                        int buttonIndex = ((Component.Identifier.Button) component.getIdentifier()).ordinal();
+                        Component.Identifier.Button button = (Component.Identifier.Button) component.getIdentifier();
+                        int buttonIndex = button.toString().hashCode() % 16; // Simple mapping for up to 16 buttons
                         input.setButton(buttonIndex, value > 0.5f);
                     }
                     break;

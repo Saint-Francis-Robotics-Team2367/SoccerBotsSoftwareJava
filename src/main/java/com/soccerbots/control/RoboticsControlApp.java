@@ -15,7 +15,7 @@ public class RoboticsControlApp {
         logger.info("Starting SoccerBots Robotics Control System");
         
         try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeel());
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (ClassNotFoundException | InstantiationException | 
                  IllegalAccessException | UnsupportedLookAndFeelException e) {
             logger.warn("Could not set system look and feel", e);

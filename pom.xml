@@ -27,12 +27,12 @@
             <version>2.15.2</version>
         </dependency>
         
-        <!-- Bluetooth Communication -->
-        <dependency>
-            <groupId>org.bluez</groupId>
-            <artifactId>bluez-java</artifactId>
-            <version>0.3.0</version>
-        </dependency>
+        <!-- Bluetooth Communication (Future feature - using bluez-dbus when implemented) -->
+        <!-- <dependency>
+            <groupId>com.github.hypfvieh</groupId>
+            <artifactId>bluez-dbus</artifactId>
+            <version>0.3.2</version>
+        </dependency> -->
         
         <!-- Game Controller Support -->
         <dependency>

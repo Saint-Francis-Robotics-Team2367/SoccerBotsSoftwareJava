@@ -30,7 +30,7 @@ public class NetworkPanel extends JPanel {
         initializeComponents();
         layoutComponents();
         setupEventHandlers();
-        updateUI();
+        updateUIElements();
     }
     
     private void initializeComponents() {
@@ -107,8 +107,8 @@ public class NetworkPanel extends JPanel {
     }
     
     private void setupEventHandlers() {
-        hostNetworkRadio.addActionListener(e -> updateUI());
-        connectNetworkRadio.addActionListener(e -> updateUI());
+        hostNetworkRadio.addActionListener(e -> updateUIElements());
+        connectNetworkRadio.addActionListener(e -> updateUIElements());
         
         startStopButton.addActionListener(this::handleStartStopAction);
         refreshNetworksButton.addActionListener(e -> refreshAvailableNetworks());
@@ -121,7 +121,7 @@ public class NetworkPanel extends JPanel {
         statusTimer.start();
     }
     
-    private void updateUI() {
+    private void updateUIElements() {
         boolean hostMode = hostNetworkRadio.isSelected();
         
         hostSSIDField.setEnabled(hostMode);
