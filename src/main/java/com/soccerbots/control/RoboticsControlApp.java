@@ -1,6 +1,7 @@
 package com.soccerbots.control;
 
 import com.soccerbots.control.gui.MainWindow;
+import com.formdev.flatlaf.FlatDarkLaf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,10 +16,16 @@ public class RoboticsControlApp {
         logger.info("Starting SoccerBots Robotics Control System");
         
         try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException | InstantiationException | 
-                 IllegalAccessException | UnsupportedLookAndFeelException e) {
-            logger.warn("Could not set system look and feel", e);
+            FlatDarkLaf.setup();
+            logger.info("FlatLaf Dark theme applied successfully");
+        } catch (Exception e) {
+            logger.warn("Could not set FlatLaf Dark theme, falling back to system", e);
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (ClassNotFoundException | InstantiationException |
+                     IllegalAccessException | UnsupportedLookAndFeelException ex) {
+                logger.warn("Could not set system look and feel", ex);
+            }
         }
         
         SwingUtilities.invokeLater(() -> {

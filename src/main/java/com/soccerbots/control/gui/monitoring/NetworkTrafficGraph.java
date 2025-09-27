@@ -1,7 +1,5 @@
 package com.soccerbots.control.gui.monitoring;
 
-import com.soccerbots.control.gui.theme.Theme;
-import com.soccerbots.control.gui.theme.ThemedComponent;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,7 +9,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-public class NetworkTrafficGraph extends ThemedComponent {
+public class NetworkTrafficGraph extends JPanel {
     private static final int MAX_DATA_POINTS = 60; // 1 minute at 1 second intervals
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#0.0");
 
@@ -25,7 +23,7 @@ public class NetworkTrafficGraph extends ThemedComponent {
     private double totalReceived = 0;
 
     public NetworkTrafficGraph() {
-        super();
+        setBorder(BorderFactory.createTitledBorder("Network Traffic"));
         sentData = new ArrayList<>();
         receivedData = new ArrayList<>();
         timestamps = new ArrayList<>();
@@ -97,12 +95,11 @@ public class NetworkTrafficGraph extends ThemedComponent {
         Graphics2D g2d = (Graphics2D) g.create();
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        Theme theme = themeManager.getCurrentTheme();
         int width = getWidth();
         int height = getHeight();
 
         // Margins
-        int marginLeft = 40;
+        int marginLeft = 60;
         int marginRight = 10;
         int marginTop = 20;
         int marginBottom = 30;
@@ -111,7 +108,7 @@ public class NetworkTrafficGraph extends ThemedComponent {
         int graphHeight = height - marginTop - marginBottom;
 
         // Background
-        g2d.setColor(theme.getColor(Theme.GRAPH_BACKGROUND));
+        g2d.setColor(new Color(40, 40, 40));
         g2d.fillRect(0, 0, width, height);
 
         if (graphWidth <= 0 || graphHeight <= 0) {
@@ -120,7 +117,7 @@ public class NetworkTrafficGraph extends ThemedComponent {
         }
 
         // Grid lines
-        g2d.setColor(theme.getColor(Theme.GRAPH_GRID));
+        g2d.setColor(new Color(70, 70, 70));
         g2d.setStroke(new BasicStroke(0.5f));
 
         // Horizontal grid lines
@@ -145,7 +142,7 @@ public class NetworkTrafficGraph extends ThemedComponent {
             g2d.setStroke(new BasicStroke(2.0f));
 
             // Sent data (blue/accent color)
-            g2d.setColor(theme.getColor(Theme.ACCENT));
+            g2d.setColor(new Color(100, 170, 255));
             Path2D sentPath = new Path2D.Float();
             boolean firstPoint = true;
 
@@ -163,7 +160,7 @@ public class NetworkTrafficGraph extends ThemedComponent {
             g2d.draw(sentPath);
 
             // Received data (success color)
-            g2d.setColor(theme.getColor(Theme.SUCCESS));
+            g2d.setColor(new Color(60, 200, 100));
             Path2D receivedPath = new Path2D.Float();
             firstPoint = true;
 
@@ -182,27 +179,36 @@ public class NetworkTrafficGraph extends ThemedComponent {
         }
 
         // Labels
-        g2d.setFont(themeManager.getFont(-2));
-        g2d.setColor(theme.getColor(Theme.FOREGROUND));
+        g2d.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 10));
+        g2d.setColor(new Color(220, 220, 220));
 
         // Y-axis labels (KB/s)
+        FontMetrics fm = g2d.getFontMetrics();
         for (int i = 0; i <= 4; i++) {
             double value = maxValue * (4 - i) / 4;
             String label = DECIMAL_FORMAT.format(value);
             int y = marginTop + (graphHeight * i) / 4;
-            g2d.drawString(label, 5, y + 3);
+
+            // Center the label vertically and ensure proper spacing
+            int labelHeight = fm.getHeight();
+            int labelY = y + (labelHeight / 4);
+
+            // Ensure labels don't overlap by checking spacing
+            if (i == 0 || (y - (marginTop + (graphHeight * (i-1)) / 4)) >= labelHeight) {
+                g2d.drawString(label, 5, labelY);
+            }
         }
 
         // Legend
         int legendY = height - 15;
-        g2d.setColor(theme.getColor(Theme.ACCENT));
+        g2d.setColor(new Color(100, 170, 255));
         g2d.fillRect(marginLeft, legendY, 15, 3);
-        g2d.setColor(theme.getColor(Theme.FOREGROUND));
+        g2d.setColor(new Color(220, 220, 220));
         g2d.drawString("Sent", marginLeft + 20, legendY + 8);
 
-        g2d.setColor(theme.getColor(Theme.SUCCESS));
+        g2d.setColor(new Color(60, 200, 100));
         g2d.fillRect(marginLeft + 80, legendY, 15, 3);
-        g2d.setColor(theme.getColor(Theme.FOREGROUND));
+        g2d.setColor(new Color(220, 220, 220));
         g2d.drawString("Received", marginLeft + 100, legendY + 8);
 
         // Current values
@@ -211,17 +217,6 @@ public class NetworkTrafficGraph extends ThemedComponent {
         g2d.dispose();
     }
 
-    @Override
-    protected void applyTheme(Theme theme) {
-        setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
-        setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(theme.getColor(Theme.BORDER)),
-            "Network Traffic",
-            0, 0,
-            themeManager.getFont(-1),
-            theme.getColor(Theme.FOREGROUND)
-        ));
-    }
 
     public double getTotalSent() {
         return totalSent;

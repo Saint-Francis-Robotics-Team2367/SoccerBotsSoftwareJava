@@ -39,24 +39,73 @@ public class ControllerManager {
     
     private void detectControllers() {
         try {
-            Controller[] controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
-            
+            // Force environment refresh to detect newly connected controllers
+            ControllerEnvironment env = ControllerEnvironment.getDefaultEnvironment();
+            if (env == null) {
+                logger.warn("Controller environment is not available");
+                return;
+            }
+
+            Controller[] controllers;
+            try {
+                controllers = env.getControllers();
+            } catch (UnsatisfiedLinkError e) {
+                logger.warn("JInput native libraries not available. Controller support disabled. Error: {}", e.getMessage());
+                return;
+            } catch (Exception e) {
+                logger.error("Failed to get controllers from environment", e);
+                return;
+            }
+
+            if (controllers == null) {
+                logger.debug("No controllers array returned from environment");
+                return;
+            }
+
+            logger.debug("Scanning {} total controllers", controllers.length);
+
             for (Controller controller : controllers) {
-                if (controller.getType() == Controller.Type.GAMEPAD || 
-                    controller.getType() == Controller.Type.STICK) {
-                    
+                if (controller == null) {
+                    continue;
+                }
+
+                logger.debug("Found controller: {} (Type: {})", controller.getName(), controller.getType());
+
+                // Check for game controllers, joysticks, and generic gamepads
+                if (controller.getType() == Controller.Type.GAMEPAD ||
+                    controller.getType() == Controller.Type.STICK ||
+                    controller.getType() == Controller.Type.FINGERSTICK ||
+                    controller.getType() == Controller.Type.TRACKBALL ||
+                    (controller.getName() != null && (
+                        controller.getName().toLowerCase().contains("gamepad") ||
+                        controller.getName().toLowerCase().contains("controller") ||
+                        controller.getName().toLowerCase().contains("xbox") ||
+                        controller.getName().toLowerCase().contains("playstation") ||
+                        controller.getName().toLowerCase().contains("ps")))) {
+
+                    // Test if we can poll the controller
+                    try {
+                        if (!controller.poll()) {
+                            logger.debug("Controller {} failed initial poll test", controller.getName());
+                            continue;
+                        }
+                    } catch (Exception pollException) {
+                        logger.debug("Controller {} polling exception: {}", controller.getName(), pollException.getMessage());
+                        continue;
+                    }
+
                     String controllerId = generateControllerId(controller);
-                    
+
                     if (!connectedControllers.containsKey(controllerId)) {
                         GameController gameController = new GameController(controllerId, controller);
                         connectedControllers.put(controllerId, gameController);
-                        logger.info("Detected new controller: {}", controller.getName());
+                        logger.info("Detected new controller: {} (Type: {})", controller.getName(), controller.getType());
                     }
                 }
             }
-            
+
             removeDisconnectedControllers();
-            
+
         } catch (Exception e) {
             logger.error("Error detecting controllers", e);
         }
@@ -240,6 +289,28 @@ public class ControllerManager {
 
     public boolean isEmergencyStopActive() {
         return emergencyStopActive;
+    }
+
+    public void refreshControllers() {
+        logger.info("Manual controller refresh requested");
+        try {
+            // Force a complete environment refresh for newly connected devices
+            logger.info("Refreshing controller environment...");
+
+            // Try to reinitialize the controller environment if possible
+            ControllerEnvironment env = ControllerEnvironment.getDefaultEnvironment();
+
+            // Clear existing controllers first
+            logger.debug("Current controller count before refresh: {}", connectedControllers.size());
+
+            // Perform detection
+            detectControllers();
+
+            logger.info("Controller refresh completed. Found {} controllers", connectedControllers.size());
+
+        } catch (Exception e) {
+            logger.error("Error during manual controller refresh", e);
+        }
     }
     
     public void shutdown() {

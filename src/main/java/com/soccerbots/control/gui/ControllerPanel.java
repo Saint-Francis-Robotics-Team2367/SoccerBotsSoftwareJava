@@ -2,6 +2,7 @@ package com.soccerbots.control.gui;
 
 import com.soccerbots.control.controller.ControllerManager;
 import com.soccerbots.control.controller.GameController;
+import com.soccerbots.control.gui.monitoring.ControllerVisualization;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +25,10 @@ public class ControllerPanel extends JPanel {
     private JButton pairButton;
     private JButton unpairButton;
     private JButton showMappingButton;
+    private JButton showVisualizationButton;
+    private JButton refreshButton;
     private JLabel controllerCountLabel;
+    private ControllerVisualization controllerVisualization;
     
     public ControllerPanel(ControllerManager controllerManager) {
         this.controllerManager = controllerManager;
@@ -36,7 +40,7 @@ public class ControllerPanel extends JPanel {
     
     private void initializeComponents() {
         setBorder(new TitledBorder("Controller Management"));
-        setPreferredSize(new Dimension(380, 300));
+        setPreferredSize(new Dimension(380, 450));
         
         tableModel = new ControllerTableModel();
         controllerTable = new JTable(tableModel);
@@ -48,11 +52,15 @@ public class ControllerPanel extends JPanel {
         pairButton = new JButton("Pair with Robot");
         unpairButton = new JButton("Unpair");
         showMappingButton = new JButton("Show Mapping");
+        showVisualizationButton = new JButton("Show Input");
+        refreshButton = new JButton("🔄 Search Controllers");
         controllerCountLabel = new JLabel("Controllers: 0");
+        controllerVisualization = new ControllerVisualization();
 
         pairButton.setEnabled(false);
         unpairButton.setEnabled(false);
         showMappingButton.setEnabled(false);
+        showVisualizationButton.setEnabled(false);
     }
     
     private void setupTableRenderers() {
@@ -92,31 +100,43 @@ public class ControllerPanel extends JPanel {
     
     private void layoutComponents() {
         setLayout(new BorderLayout());
-        
-        // Table with scroll pane
+
+        // Top panel with table
+        JPanel topPanel = new JPanel(new BorderLayout());
         JScrollPane scrollPane = new JScrollPane(controllerTable);
-        scrollPane.setPreferredSize(new Dimension(0, 200));
-        add(scrollPane, BorderLayout.CENTER);
-        
+        scrollPane.setPreferredSize(new Dimension(0, 150));
+        topPanel.add(scrollPane, BorderLayout.CENTER);
+
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout());
+        buttonPanel.add(refreshButton);
+        buttonPanel.add(Box.createHorizontalStrut(5));
         buttonPanel.add(pairButton);
         buttonPanel.add(unpairButton);
         buttonPanel.add(showMappingButton);
-        buttonPanel.add(Box.createHorizontalStrut(20));
+        buttonPanel.add(showVisualizationButton);
+        buttonPanel.add(Box.createHorizontalStrut(10));
         buttonPanel.add(controllerCountLabel);
-        
-        add(buttonPanel, BorderLayout.SOUTH);
+        topPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        add(topPanel, BorderLayout.NORTH);
+
+        // Controller visualization in center
+        controllerVisualization.setPreferredSize(new Dimension(0, 250));
+        add(controllerVisualization, BorderLayout.CENTER);
     }
     
     private void setupEventHandlers() {
         pairButton.addActionListener(this::handlePairing);
         unpairButton.addActionListener(this::handleUnpairing);
         showMappingButton.addActionListener(this::handleShowMapping);
+        showVisualizationButton.addActionListener(this::handleShowVisualization);
+        refreshButton.addActionListener(this::handleRefreshControllers);
         
         controllerTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 updateButtonStates();
+                updateControllerVisualization();
             }
         });
     }
@@ -195,10 +215,61 @@ public class ControllerPanel extends JPanel {
         dialog.setVisible(true);
     }
 
+    private void handleShowVisualization(ActionEvent e) {
+        int selectedRow = controllerTable.getSelectedRow();
+        if (selectedRow == -1) {
+            return;
+        }
+
+        GameController controller = tableModel.getControllerAt(selectedRow);
+        if (controller == null) {
+            return;
+        }
+
+        // Create a dialog to show the controller visualization in fullscreen
+        JDialog dialog = new JDialog((JFrame) SwingUtilities.getWindowAncestor(this), "Controller Input Visualization", true);
+        ControllerVisualization fullViz = new ControllerVisualization();
+        fullViz.setController(controller);
+        fullViz.setPreferredSize(new Dimension(600, 400));
+
+        dialog.add(fullViz);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
+    }
+
+    private void handleRefreshControllers(ActionEvent e) {
+        refreshButton.setEnabled(false);
+        refreshButton.setText("Searching...");
+
+        // Run controller refresh in background
+        SwingUtilities.invokeLater(() -> {
+            try {
+                controllerManager.refreshControllers();
+
+                // Update the table
+                tableModel.fireTableDataChanged();
+                updateControllerCount();
+
+                logger.info("Controller refresh completed");
+
+            } catch (Exception ex) {
+                logger.error("Error during controller refresh", ex);
+                JOptionPane.showMessageDialog(this,
+                    "Error searching for controllers: " + ex.getMessage(),
+                    "Search Error", JOptionPane.ERROR_MESSAGE);
+            } finally {
+                refreshButton.setEnabled(true);
+                refreshButton.setText("🔄 Search Controllers");
+            }
+        });
+    }
+
     private void updateButtonStates() {
         boolean hasSelection = controllerTable.getSelectedRow() != -1;
         pairButton.setEnabled(hasSelection);
         showMappingButton.setEnabled(hasSelection);
+        showVisualizationButton.setEnabled(hasSelection);
 
         if (hasSelection) {
             GameController controller = tableModel.getControllerAt(controllerTable.getSelectedRow());
@@ -207,6 +278,16 @@ public class ControllerPanel extends JPanel {
             unpairButton.setEnabled(pairedRobotId != null);
         } else {
             unpairButton.setEnabled(false);
+        }
+    }
+
+    private void updateControllerVisualization() {
+        int selectedRow = controllerTable.getSelectedRow();
+        if (selectedRow != -1) {
+            GameController controller = tableModel.getControllerAt(selectedRow);
+            controllerVisualization.setController(controller);
+        } else {
+            controllerVisualization.setController(null);
         }
     }
     

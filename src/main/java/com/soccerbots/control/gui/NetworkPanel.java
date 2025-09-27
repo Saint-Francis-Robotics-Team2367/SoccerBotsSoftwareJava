@@ -1,8 +1,6 @@
 package com.soccerbots.control.gui;
 
 import com.soccerbots.control.network.NetworkManager;
-import com.soccerbots.control.gui.theme.Theme;
-import com.soccerbots.control.gui.theme.ThemedComponent;
 import com.soccerbots.control.gui.monitoring.NetworkTrafficGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +11,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.List;
 
-public class NetworkPanel extends ThemedComponent {
+public class NetworkPanel extends JPanel {
     private static final Logger logger = LoggerFactory.getLogger(NetworkPanel.class);
 
     private final NetworkManager networkManager;
@@ -33,18 +31,16 @@ public class NetworkPanel extends ThemedComponent {
     private Timer networkStatsTimer;
 
     public NetworkPanel(NetworkManager networkManager) {
-        super(); // This will call applyTheme, but we need to handle null components
         this.networkManager = networkManager;
         initializeComponents();
         layoutComponents();
         setupEventHandlers();
         updateUIElements();
-        // Apply theme again after components are initialized
-        applyTheme(themeManager.getCurrentTheme());
     }
 
     private void initializeComponents() {
         setPreferredSize(new Dimension(400, 450));
+        setBorder(BorderFactory.createTitledBorder("Network Configuration"));
 
         hostNetworkRadio = new JRadioButton("Host Own Network", true);
         connectNetworkRadio = new JRadioButton("Connect to Existing Network");
@@ -53,11 +49,21 @@ public class NetworkPanel extends ThemedComponent {
         networkModeGroup.add(hostNetworkRadio);
         networkModeGroup.add(connectNetworkRadio);
 
-        hostSSIDField = new JTextField("SoccerBots_Network", 15);
-        hostPasswordField = new JPasswordField("soccerbots123", 15);
+        hostSSIDField = new JTextField("SoccerBots_Network");
+        hostSSIDField.setPreferredSize(new Dimension(200, 25));
+        hostSSIDField.setMinimumSize(new Dimension(150, 25));
+
+        hostPasswordField = new JPasswordField("soccerbots123");
+        hostPasswordField.setPreferredSize(new Dimension(200, 25));
+        hostPasswordField.setMinimumSize(new Dimension(150, 25));
 
         availableNetworksCombo = new JComboBox<>();
-        connectPasswordField = new JPasswordField(15);
+        availableNetworksCombo.setPreferredSize(new Dimension(180, 25));
+        availableNetworksCombo.setMinimumSize(new Dimension(150, 25));
+
+        connectPasswordField = new JPasswordField();
+        connectPasswordField.setPreferredSize(new Dimension(200, 25));
+        connectPasswordField.setMinimumSize(new Dimension(150, 25));
 
         startStopButton = new JButton("Start Network");
         refreshNetworksButton = new JButton("Refresh");
@@ -297,8 +303,6 @@ public class NetworkPanel extends ThemedComponent {
     }
 
     private void updateNetworkStatus() {
-        Theme theme = themeManager.getCurrentTheme();
-
         if (networkManager.isNetworkActive()) {
             String status = "Network: Connected";
             if (networkManager.isHostingNetwork()) {
@@ -315,10 +319,10 @@ public class NetworkPanel extends ThemedComponent {
                 signalStrengthBar.setString("Signal: " + signalStrength + "%");
             }
             statusLabel.setText(status);
-            statusLabel.setForeground(theme.getColor(Theme.STATUS_CONNECTED));
+            statusLabel.setForeground(new Color(60, 200, 100));
         } else {
             statusLabel.setText("Network: Disconnected");
-            statusLabel.setForeground(theme.getColor(Theme.STATUS_DISCONNECTED));
+            statusLabel.setForeground(new Color(255, 100, 120));
             updateConnectionDetails("N/A", "N/A", "N/A");
             signalStrengthBar.setValue(0);
             signalStrengthBar.setString("Signal: 0%");
@@ -345,27 +349,6 @@ public class NetworkPanel extends ThemedComponent {
             double sent = Math.random() * 1024; // Random bytes
             double received = Math.random() * 2048;
             trafficGraph.addDataPoint(sent, received);
-        }
-    }
-
-    @Override
-    protected void applyTheme(Theme theme) {
-        setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
-        setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(theme.getColor(Theme.BORDER)),
-            "Network Configuration",
-            0, 0,
-            themeManager.getFont(-1),
-            theme.getColor(Theme.FOREGROUND)
-        ));
-
-        // Apply theme to all components
-        applyThemeToComponent(this, theme);
-
-        // Special handling for signal strength bar (only if initialized)
-        if (signalStrengthBar != null) {
-            signalStrengthBar.setBackground(theme.getColor(Theme.PANEL_BACKGROUND));
-            signalStrengthBar.setForeground(theme.getColor(Theme.ACCENT));
         }
     }
 
