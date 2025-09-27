@@ -1,0 +1,38 @@
+Required Arduino Libraries for ESP32 SoccerBot Code:
+
+1. ArduinoJson (v6.21.3 or later)
+   - Install via Arduino Library Manager
+   - Search for "ArduinoJson" by Benoit Blanchon
+   - Used for JSON parsing and serialization
+
+2. ESP32 Board Support Package
+   - Install via Arduino IDE Board Manager
+   - Add URL: https://dl.espressif.com/dl/package_esp32_index.json
+   - Install "esp32 by Espressif Systems"
+
+Built-in Libraries (no installation required):
+- WiFi.h (ESP32 WiFi library)
+- WiFiUdp.h (UDP networking)
+- BluetoothSerial.h (ESP32 Bluetooth)
+- Preferences.h (ESP32 NVS storage)
+- esp_wifi.h (ESP32 WiFi advanced functions)
+
+Installation Steps:
+1. Open Arduino IDE
+2. Go to File > Preferences
+3. Add ESP32 board URL to Additional Board Manager URLs
+4. Go to Tools > Board > Board Manager
+5. Search and install "esp32"
+6. Go to Sketch > Include Library > Manage Libraries
+7. Search and install "ArduinoJson"
+8. Select ESP32 Dev Module as board type
+9. Set upload speed to 921600 for faster uploads
+
+Hardware Connections (ESP32-WROOM):
+- GPIO 2: Built-in LED (status)
+- GPIO 4: WiFi status LED
+- GPIO 5: Bluetooth status LED  
+- GPIO 18: Command received LED
+- Connect LEDs with 220Ω resistors to ground
+
+Note: Ensure you have the latest ESP32 core (v2.0.0 or later) for best compatibility.
