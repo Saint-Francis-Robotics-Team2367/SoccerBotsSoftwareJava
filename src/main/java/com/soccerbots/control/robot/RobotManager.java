@@ -172,8 +172,15 @@ public class RobotManager {
     public void sendStopCommand(String robotId) {
         RobotCommand command = new RobotCommand("STOP");
         command.addParameter("timestamp", System.currentTimeMillis());
-        
+
         sendCommand(robotId, command);
+    }
+
+    public void emergencyStopAll() {
+        logger.warn("EMERGENCY STOP - Halting all robots");
+        for (Robot robot : connectedRobots.values()) {
+            sendStopCommand(robot.getId());
+        }
     }
     
     public void configureRobotWiFi(String robotId, String ssid, String password) {

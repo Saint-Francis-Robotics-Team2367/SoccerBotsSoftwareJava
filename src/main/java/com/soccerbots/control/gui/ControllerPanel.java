@@ -23,6 +23,7 @@ public class ControllerPanel extends JPanel {
     private ControllerTableModel tableModel;
     private JButton pairButton;
     private JButton unpairButton;
+    private JButton showMappingButton;
     private JLabel controllerCountLabel;
     
     public ControllerPanel(ControllerManager controllerManager) {
@@ -46,10 +47,12 @@ public class ControllerPanel extends JPanel {
         
         pairButton = new JButton("Pair with Robot");
         unpairButton = new JButton("Unpair");
+        showMappingButton = new JButton("Show Mapping");
         controllerCountLabel = new JLabel("Controllers: 0");
-        
+
         pairButton.setEnabled(false);
         unpairButton.setEnabled(false);
+        showMappingButton.setEnabled(false);
     }
     
     private void setupTableRenderers() {
@@ -99,6 +102,7 @@ public class ControllerPanel extends JPanel {
         JPanel buttonPanel = new JPanel(new FlowLayout());
         buttonPanel.add(pairButton);
         buttonPanel.add(unpairButton);
+        buttonPanel.add(showMappingButton);
         buttonPanel.add(Box.createHorizontalStrut(20));
         buttonPanel.add(controllerCountLabel);
         
@@ -108,6 +112,7 @@ public class ControllerPanel extends JPanel {
     private void setupEventHandlers() {
         pairButton.addActionListener(this::handlePairing);
         unpairButton.addActionListener(this::handleUnpairing);
+        showMappingButton.addActionListener(this::handleShowMapping);
         
         controllerTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -171,14 +176,33 @@ public class ControllerPanel extends JPanel {
             logger.info("Unpaired controller: {}", controller.getName());
         }
     }
-    
+
+    private void handleShowMapping(ActionEvent e) {
+        int selectedRow = controllerTable.getSelectedRow();
+        if (selectedRow == -1) {
+            return;
+        }
+
+        GameController controller = tableModel.getControllerAt(selectedRow);
+        if (controller == null) {
+            return;
+        }
+
+        ControllerMappingDialog dialog = new ControllerMappingDialog(
+            SwingUtilities.getWindowAncestor(this),
+            controller
+        );
+        dialog.setVisible(true);
+    }
+
     private void updateButtonStates() {
         boolean hasSelection = controllerTable.getSelectedRow() != -1;
         pairButton.setEnabled(hasSelection);
-        
+        showMappingButton.setEnabled(hasSelection);
+
         if (hasSelection) {
             GameController controller = tableModel.getControllerAt(controllerTable.getSelectedRow());
-            String pairedRobotId = controller != null ? 
+            String pairedRobotId = controller != null ?
                 controllerManager.getPairedRobotId(controller.getId()) : null;
             unpairButton.setEnabled(pairedRobotId != null);
         } else {

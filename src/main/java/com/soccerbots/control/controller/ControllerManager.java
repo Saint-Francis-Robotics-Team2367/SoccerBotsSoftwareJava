@@ -20,6 +20,7 @@ public class ControllerManager {
     private final ScheduledExecutorService scheduledExecutor;
     
     private boolean isPolling = false;
+    private volatile boolean emergencyStopActive = false;
     
     public ControllerManager(RobotManager robotManager) {
         this.robotManager = robotManager;
@@ -105,14 +106,14 @@ public class ControllerManager {
                 gameController.updateInput(input);
                 
                 String pairedRobotId = controllerRobotPairings.get(gameController.getId());
-                if (pairedRobotId != null && input.hasMovement()) {
+                if (pairedRobotId != null && !emergencyStopActive && input.hasMovement()) {
                     robotManager.sendMovementCommand(
                         pairedRobotId,
                         input.getForward(),
                         input.getSideways(),
                         input.getRotation()
                     );
-                } else if (pairedRobotId != null && input.isStopCommand()) {
+                } else if (pairedRobotId != null && !emergencyStopActive && input.isStopCommand()) {
                     robotManager.sendStopCommand(pairedRobotId);
                 }
                 
@@ -224,6 +225,21 @@ public class ControllerManager {
         if (!isPolling) {
             startInputPolling();
         }
+    }
+
+    public void activateEmergencyStop() {
+        emergencyStopActive = true;
+        logger.warn("Emergency stop activated - controller inputs disabled");
+        robotManager.emergencyStopAll();
+    }
+
+    public void deactivateEmergencyStop() {
+        emergencyStopActive = false;
+        logger.info("Emergency stop deactivated - controller inputs re-enabled");
+    }
+
+    public boolean isEmergencyStopActive() {
+        return emergencyStopActive;
     }
     
     public void shutdown() {

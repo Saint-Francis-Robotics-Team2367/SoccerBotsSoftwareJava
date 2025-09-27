@@ -22,6 +22,8 @@ public class MainWindow extends JFrame {
     private RobotPanel robotPanel;
     private ControllerPanel controllerPanel;
     private StatusPanel statusPanel;
+    private GameTimerPanel gameTimerPanel;
+    private JButton emergencyStopButton;
     
     public MainWindow() {
         initializeManagers();
@@ -76,14 +78,34 @@ public class MainWindow extends JFrame {
         networkPanel = new NetworkPanel(networkManager);
         robotPanel = new RobotPanel(robotManager);
         controllerPanel = new ControllerPanel(controllerManager);
+        gameTimerPanel = new GameTimerPanel(controllerManager);
+
+        // Create emergency stop button
+        emergencyStopButton = new JButton("EMERGENCY STOP");
+        emergencyStopButton.setBackground(Color.RED);
+        emergencyStopButton.setForeground(Color.WHITE);
+        emergencyStopButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
+        emergencyStopButton.setPreferredSize(new Dimension(200, 40));
+        emergencyStopButton.addActionListener(this::handleEmergencyStop);
     }
     
     private void layoutComponents() {
         JPanel leftPanel = new JPanel(new BorderLayout());
         leftPanel.add(networkPanel, BorderLayout.NORTH);
-        leftPanel.add(controllerPanel, BorderLayout.CENTER);
+
+        // Create center-left panel for controller and timer
+        JPanel centerLeftPanel = new JPanel(new BorderLayout());
+        centerLeftPanel.add(controllerPanel, BorderLayout.CENTER);
+        centerLeftPanel.add(gameTimerPanel, BorderLayout.SOUTH);
+        leftPanel.add(centerLeftPanel, BorderLayout.CENTER);
+
+        // Emergency stop button at bottom of left panel
+        JPanel emergencyPanel = new JPanel(new FlowLayout());
+        emergencyPanel.add(emergencyStopButton);
+        leftPanel.add(emergencyPanel, BorderLayout.SOUTH);
+
         leftPanel.setPreferredSize(new Dimension(400, 0));
-        
+
         add(leftPanel, BorderLayout.WEST);
         add(robotPanel, BorderLayout.CENTER);
     }
@@ -98,6 +120,34 @@ public class MainWindow extends JFrame {
         
         Timer statusUpdateTimer = new Timer(1000, e -> updateStatusConnections());
         statusUpdateTimer.start();
+    }
+
+    private void handleEmergencyStop(java.awt.event.ActionEvent e) {
+        boolean isCurrentlyActive = controllerManager.isEmergencyStopActive();
+
+        if (isCurrentlyActive) {
+            // Deactivate emergency stop
+            controllerManager.deactivateEmergencyStop();
+            emergencyStopButton.setText("EMERGENCY STOP");
+            emergencyStopButton.setBackground(Color.RED);
+            logger.info("Emergency stop deactivated by user");
+        } else {
+            // Activate emergency stop
+            int result = JOptionPane.showConfirmDialog(
+                this,
+                "This will immediately stop all robot movement.\nAre you sure?",
+                "Emergency Stop",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE
+            );
+
+            if (result == JOptionPane.YES_OPTION) {
+                controllerManager.activateEmergencyStop();
+                emergencyStopButton.setText("RESUME CONTROL");
+                emergencyStopButton.setBackground(Color.ORANGE);
+                logger.warn("Emergency stop activated by user");
+            }
+        }
     }
     
     private void updateStatusConnections() {
@@ -115,14 +165,19 @@ public class MainWindow extends JFrame {
                         "• WiFi network management\n" +
                         "• Bluetooth robot configuration\n" +
                         "• Multiple robot control\n" +
-                        "• Controller pairing\n" +
-                        "• Real-time status monitoring";
-        
+                        "• Controller pairing & mapping\n" +
+                        "• Real-time status monitoring\n" +
+                        "• Emergency stop control\n" +
+                        "• Game timer with auto-stop";
+
         JOptionPane.showMessageDialog(this, message, "About", JOptionPane.INFORMATION_MESSAGE);
     }
     
     private void cleanup() {
         logger.info("Shutting down application");
+        if (gameTimerPanel != null) {
+            gameTimerPanel.shutdown();
+        }
         if (controllerManager != null) {
             controllerManager.shutdown();
         }
