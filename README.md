@@ -55,10 +55,10 @@ git clone <repository-url>
 cd SoccerBotsSoftwareJava
 
 # Build the JavaFX application
-mvn clean compile package
+mvn clean compile
 
 # Run the Grok-themed control station
-java -jar target/robotics-control-system-1.0.0-jar-with-dependencies.jar
+mvn javafx:run
 ```
 
 ### 2. ESP32 Robot Configuration
@@ -238,10 +238,13 @@ networkManager.sendRobotCommand(robotName, robotIP,
 ### Building from Source
 ```bash
 # Compile with JavaFX dependencies
-mvn clean compile package
+mvn clean compile
+
+# Run the application
+mvn javafx:run
 
 # Run with debug logging
-java -Dlogging.level.com.soccerbots=DEBUG -jar target/robotics-control-system-1.0.0-jar-with-dependencies.jar
+mvn javafx:run -Djavafx.args="-Dlogging.level.com.soccerbots=DEBUG"
 
 # Clean build
 mvn clean
