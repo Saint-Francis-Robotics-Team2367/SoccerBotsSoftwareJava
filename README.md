@@ -1,260 +1,311 @@
-# SoccerBots Robotics Control System
+# SoccerBots Control Station
 
-A comprehensive, low-latency control system for ESP32-based soccer robots with Java GUI host application, WiFi networking, Bluetooth configuration, and real-time controller input.
+A modern, Grok AI-inspired JavaFX control system for ESP32-based soccer robots with real-time controller input, WiFi networking, and professional dark-mode interface.
 
-![System Architecture](https://img.shields.io/badge/Platform-ESP32%20%2B%20Java-blue)
+![System Architecture](https://img.shields.io/badge/Platform-ESP32%20%2B%20JavaFX-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Version](https://img.shields.io/badge/Version-1.0.0-orange)
+![Theme](https://img.shields.io/badge/UI-Grok%20Inspired-purple)
 
 ## 🚀 Features
 
-### Host Application (Java)
-- **🖥️ Modern GUI** - Intuitive interface for managing robots and controllers
-- **📡 WiFi Management** - Host your own network or connect to existing networks
-- **🎮 Controller Support** - USB game controller input with automatic detection
-- **🔍 Robot Discovery** - Automatic detection and pairing of robots
-- **📊 Real-time Status** - Live monitoring of connections and system health
-- **⚡ Low Latency** - Optimized for responsive robot control (16ms update rate)
+### Modern JavaFX Interface
+- **🎨 Grok AI-Inspired Theme** - Dark-mode interface with cosmic aesthetics
+- **💫 Smooth Animations** - 150-200ms transitions with subtle scaling effects
+- **🎯 Intuitive Navigation** - Clean header with pill-shaped navigation buttons
+- **📱 Responsive Design** - Adapts to different screen sizes and resolutions
+- **♿ High Accessibility** - Strong contrast ratios and readable typography
+- **🌙 Dark-First Design** - Professional appearance optimized for control rooms
 
-### ESP32 Robot Firmware
-- **📶 WiFi Connectivity** - Automatic connection with reconnection logic
-- **📲 Bluetooth Configuration** - Configure WiFi settings via Bluetooth
-- **📨 UDP Command Processing** - High-speed command receiving and parsing
-- **💡 LED Status Indicators** - Visual feedback for system status
-- **🔧 Persistent Configuration** - Settings saved in non-volatile storage
-- **🔄 Auto-discovery** - Automatic network presence broadcasting
+### ESP32 Robot Integration
+- **📡 WATCHTOWER Network** - Dedicated network for ESP32 robot communication
+- **🔗 Manual Robot Addition** - Direct IP-based robot connections
+- **⚡ Binary UDP Protocol** - High-performance 24-byte command packets
+- **🎮 Direct Controller Mapping** - Real-time stick-to-robot input translation
+- **🟢 Game State Management** - Teleop/standby mode control
+- **📊 Live Status Monitoring** - Real-time connection and robot status
 
 ### Communication Protocol
-- **🌐 UDP Networking** - Low-latency communication protocol
-- **📋 JSON Commands** - Structured command format for robot control
-- **🔐 Secure Configuration** - Bluetooth-based initial setup
-- **📡 Broadcast Discovery** - Automatic robot detection system
+- **🌐 ESP32 UDP** - Port 2367 binary communication
+- **📋 Binary Commands** - Optimized packet structure (16 + 6 + 2 bytes)
+- **🎯 Robot Targeting** - Name-based robot identification
+- **🔄 Real-time Updates** - ~60Hz controller input processing
 
 ## 📋 Requirements
 
 ### Host Computer
 - **OS**: Windows 10/11, macOS 10.14+, or Linux Ubuntu 18.04+
-- **Java**: Java 11 or later
+- **Java**: Java 17 or later (with JavaFX support)
 - **RAM**: 4GB minimum, 8GB+ recommended
-- **Network**: WiFi adapter with hosted network capability
+- **Network**: WiFi connection to WATCHTOWER network
 - **Controllers**: USB game controllers (Xbox, PlayStation, etc.)
 
 ### ESP32 Robots
 - **Hardware**: ESP32-WROOM development boards
+- **Network**: Pre-configured for WATCHTOWER WiFi network
 - **Power**: 5V power supply or battery pack
-- **LEDs**: 4x status LEDs with 220Ω resistors
-- **Tools**: Arduino IDE 1.8.19+ with ESP32 board support
+- **Communication**: UDP port 2367 listener
 
 ## 🛠️ Quick Start
 
-### 1. Host Application
+### 1. Host Application Setup
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd SoccerBotsSoftwareJava
 
-# Build the application
-mvn clean compile assembly:single
+# Build the JavaFX application
+mvn clean compile package
 
-# Run the application
+# Run the Grok-themed control station
 java -jar target/robotics-control-system-1.0.0-jar-with-dependencies.jar
 ```
 
-### 2. ESP32 Setup
-1. Install Arduino IDE and ESP32 board support
-2. Install ArduinoJson library
-3. Configure robot settings in `soccerbot_main.ino`:
-   ```cpp
-   const char* ROBOT_TEAM_NAME = "Your_Team_Name";
-   const char* ROBOT_DEFAULT_NAME = "SoccerBot_01";
-   const char* ROBOT_ID = "ROBOT_001";
-   ```
-4. Upload firmware to ESP32
-5. Configure WiFi via Bluetooth or GUI
+### 2. ESP32 Robot Configuration
+1. **Flash ESP32 firmware** with WATCHTOWER network credentials
+2. **Power on robots** - they will auto-connect to WATCHTOWER network
+3. **Note robot IP addresses** for manual addition to control station
 
-### 3. System Configuration
-1. **Start Host Application** and configure network
-2. **Discover Robots** using the discovery feature
-3. **Connect Controllers** via USB
-4. **Pair Controllers** with discovered robots
-5. **Start Controlling** robots with controller inputs
+### 3. System Operation
+1. **Connect to WATCHTOWER Network** on your host computer
+2. **Launch Control Station** - enjoy the Grok-inspired interface
+3. **Add Robots Manually** using name and IP address
+4. **Connect USB Controllers** - they will be auto-detected
+5. **Pair Controllers** with robots using the interface
+6. **Enable Teleop Mode** to start robot control
+
+## 🎨 Grok-Inspired Design
+
+### Color Palette
+- **Primary Background**: Deep Black (#0A0A0A) for cosmic feel
+- **Surface Colors**: Soft Grays (#1A1A1A, #2A2F36) for cards
+- **Text**: High-contrast White/Off-white (#FFFFFF, #EDEDED)
+- **Accents**: Blue (#1D9BF0), Green (#22C55E), Yellow (#EAB308), Red (#EF4444)
+
+### Typography
+- **Font Family**: Inter, SF Pro Display, Roboto, system fonts
+- **Sizes**: 14px body, 16px labels, 24px titles
+- **Weight**: 400 regular, 500 medium, 600 semi-bold
+- **Letter Spacing**: Slight negative (-0.06em) for modern look
+
+### UI Components
+- **Pill-Shaped Buttons**: Rounded with hover scaling (1.02x)
+- **Card-Based Layout**: Subtle shadows and clean borders
+- **Status Indicators**: Color-coded circles with drop shadows
+- **Smooth Animations**: Fade and scale transitions throughout
 
 ## 📁 Project Structure
 
 ```
 SoccerBotsSoftwareJava/
 ├── src/main/java/com/soccerbots/control/
-│   ├── RoboticsControlApp.java          # Main application entry point
-│   ├── gui/                             # User interface components
-│   │   ├── MainWindow.java              # Main application window
-│   │   ├── NetworkPanel.java            # Network configuration
-│   │   ├── RobotPanel.java              # Robot management
-│   │   ├── ControllerPanel.java         # Controller management
-│   │   └── StatusPanel.java             # System status display
-│   ├── network/                         # Network management
-│   │   └── NetworkManager.java          # WiFi and UDP handling
-│   ├── robot/                           # Robot communication
+│   ├── RoboticsControlFXApp.java        # JavaFX application entry point
+│   ├── gui/                             # Grok-themed UI components
+│   │   ├── MainWindow.java              # Main window with header navigation
+│   │   ├── RobotPanel.java              # ESP32 robot management
+│   │   ├── ControllerPanel.java         # USB controller management
+│   │   ├── NetworkPanel.java            # WATCHTOWER network status
+│   │   ├── MonitoringPanel.java         # System monitoring
+│   │   └── SettingsPanel.java           # Application settings
+│   ├── network/                         # ESP32 network communication
+│   │   └── NetworkManager.java          # UDP binary protocol handler
+│   ├── robot/                           # ESP32 robot management
 │   │   ├── RobotManager.java            # Robot discovery and control
 │   │   ├── Robot.java                   # Robot data model
-│   │   └── RobotCommand.java            # Command structure
-│   └── controller/                      # Controller input
-│       ├── ControllerManager.java       # Input handling and processing
+│   │   └── ESP32Command.java            # Binary command structure
+│   └── controller/                      # Controller input processing
+│       ├── ControllerManager.java       # USB controller handling
 │       ├── GameController.java          # Controller abstraction
-│       └── ControllerInput.java         # Input data model
-├── esp32_robot_code/
-│   ├── soccerbot_main/
-│   │   └── soccerbot_main.ino          # Main ESP32 firmware
-│   └── libraries_required.txt          # Required Arduino libraries
-├── pom.xml                              # Maven build configuration
-├── INSTALLATION_GUIDE.md               # Detailed setup instructions
-├── USER_MANUAL.md                      # Complete user documentation
-└── README.md                           # This file
+│       └── ControllerInput.java         # Input normalization
+├── src/main/resources/
+│   └── styles/
+│       └── grok.css                     # Grok AI-inspired theme
+├── esp32_robot_code/                    # ESP32 firmware (provided)
+├── docs/                                # Project documentation
+├── pom.xml                              # Maven build with JavaFX
+└── README.md                            # This file
 ```
 
-## 🔧 Hardware Setup
+## 🔧 ESP32 Communication Protocol
 
-### ESP32 Connections
+### Binary Packet Structure (24 bytes)
 ```
-GPIO Pin  | Function              | Connection
-----------|----------------------|----------------------------------
-GPIO 2    | System Status LED    | Built-in LED
-GPIO 4    | WiFi Status LED      | LED + 220Ω resistor → GND
-GPIO 5    | Bluetooth Status LED | LED + 220Ω resistor → GND
-GPIO 18   | Command Status LED   | LED + 220Ω resistor → GND
-3.3V/VIN  | Power               | 3.3V or 5V power supply
-GND       | Ground              | Power supply ground
+Bytes 0-15:  Robot name (null-padded string)
+Bytes 16-19: Stick axes (leftX, leftY, rightX, rightY) [0-255]
+Bytes 20-21: Unused axes (reserved)
+Bytes 22:    Button data (cross, circle, square, triangle)
+Bytes 23:    Unused buttons (reserved)
 ```
 
-### Recommended Controllers
-- Xbox One/Series Controllers (USB)
-- PlayStation 4/5 Controllers (USB)
-- Generic USB gamepads with analog sticks
-- Any DirectInput compatible controller
+### Controller to ESP32 Mapping
+- **Left Stick**: Forward/backward and sideways movement
+- **Right Stick**: Rotation and unused axis
+- **Buttons**: PlayStation-style (Cross, Circle, Square, Triangle)
+- **Values**: Normalized to 0-255 range with center points
+
+## 🎮 Interface Guide
+
+### Main Navigation
+- **Robots** - Add and manage ESP32 robots
+- **Controllers** - View and pair USB controllers
+- **Network** - Monitor WATCHTOWER network status
+- **Monitoring** - System performance and status
+- **Settings** - Application configuration
+
+### Robot Management
+1. **Network Status** - Shows WATCHTOWER connection
+2. **Add Robot** - Manual entry with name and IP
+3. **Robot Cards** - Live status with action buttons
+4. **Teleop Control** - Enable/disable robot movement
+
+### Controller Operations
+- **Auto-Detection** - USB controllers appear automatically
+- **Pairing** - Assign controllers to specific robots
+- **Real-time Input** - Live stick and button monitoring
+- **Emergency Stop** - Immediate halt for all robots
 
 ## 🌐 Network Architecture
 
-### Communication Protocols
-- **Discovery**: UDP broadcast on port 12345
-- **Commands**: UDP unicast on port 12346
-- **Configuration**: Bluetooth Serial (initial setup)
+### WATCHTOWER Network
+- **Purpose**: Dedicated ESP32 robot communication
+- **Protocol**: UDP port 2367 for binary commands
+- **Discovery**: Manual robot addition by IP address
+- **Security**: Network-level access control
 
 ### Data Flow
-1. **Host discovers robots** via UDP broadcast
-2. **Robots respond** with identification data
-3. **Controllers send input** to host application
-4. **Host translates** input to robot commands
-5. **Commands sent** via UDP to paired robots
-6. **Robots execute** movement commands
+1. **Controller Input** → ControllerManager (60Hz polling)
+2. **Input Processing** → ESP32Command binary conversion
+3. **Network Transmission** → UDP to robot IP:2367
+4. **Robot Execution** → Movement command processing
 
 ## 📚 Documentation
 
 ### Complete Guides
-- **[Installation Guide](INSTALLATION_GUIDE.md)** - Step-by-step setup instructions
-- **[User Manual](USER_MANUAL.md)** - Complete operational documentation
+- **[Project Structure](PROJECT_STRUCTURE.md)** - Detailed file explanations
+- **[User Manual](USER_MANUAL.md)** - Complete operational guide
+- **[Installation Guide](INSTALLATION_GUIDE.md)** - Setup instructions
 
 ### Key Topics
-- System requirements and compatibility
-- Hardware assembly and connections
-- Software installation and configuration
-- Network setup and optimization
-- Robot discovery and pairing
-- Controller configuration and mapping
-- Troubleshooting common issues
-- Performance optimization tips
+- Grok theme customization and CSS variables
+- ESP32 binary protocol implementation
+- JavaFX application architecture
+- Controller input processing and mapping
+- Network configuration and troubleshooting
 
 ## 🎮 Usage Examples
 
 ### Basic Robot Control
 ```java
-// Discover robots on the network
-robotManager.startDiscovery();
+// Add robot manually
+Robot robot = robotManager.addRobot("MyRobot", "192.168.1.100");
 
-// Send movement command to robot
-robotManager.sendMovementCommand("ROBOT_001", 0.5, 0.0, 0.2);
-// Parameters: robotId, forward, sideways, rotation (-1.0 to 1.0)
+// Send controller input (normalized -1.0 to 1.0)
+robotManager.sendMovementCommand(
+    "MyRobot",
+    leftStickX, leftStickY,
+    rightStickX, rightStickY
+);
 
-// Stop robot
-robotManager.sendStopCommand("ROBOT_001");
+// Enable teleop mode
+robotManager.startTeleop();
+
+// Emergency stop all robots
+robotManager.emergencyStopAll();
 ```
 
-### Bluetooth Configuration
-```json
-// Configure robot WiFi via Bluetooth
-{
-  "command": "configure_wifi",
-  "ssid": "Your_Network_Name",
-  "password": "your_password"
-}
+### ESP32 Binary Command
+```java
+// Create command for ESP32
+ESP32Command cmd = ESP32Command.fromControllerInput(
+    "MyRobot",
+    0.5,  // leftStickX
+    -0.3, // leftStickY
+    0.0,  // rightStickX
+    0.8,  // rightStickY
+    true, false, false, false // buttons
+);
 
-// Get robot status
-{
-  "command": "get_status"
-}
-
-// Set robot name
-{
-  "command": "set_name",
-  "name": "NewRobotName"
-}
+// Send via UDP to robot
+networkManager.sendRobotCommand(robotName, robotIP,
+    cmd.getLeftX(), cmd.getLeftY(),
+    cmd.getRightX(), cmd.getRightY(),
+    cmd.isCross(), cmd.isCircle(),
+    cmd.isSquare(), cmd.isTriangle());
 ```
 
 ## 🔧 Development
 
 ### Building from Source
 ```bash
-# Compile and package
-mvn clean compile assembly:single
+# Compile with JavaFX dependencies
+mvn clean compile package
 
-# Run tests
-mvn test
+# Run with debug logging
+java -Dlogging.level.com.soccerbots=DEBUG -jar target/robotics-control-system-1.0.0-jar-with-dependencies.jar
 
 # Clean build
 mvn clean
 ```
 
-### Adding New Features
-1. **Robot Commands**: Extend `RobotCommand` class and update ESP32 parser
-2. **Controller Mappings**: Modify `ControllerInput` processing
-3. **Network Protocols**: Update `NetworkManager` for new communication methods
-4. **GUI Components**: Add new panels to `MainWindow` layout
+### Customizing Grok Theme
+Edit `src/main/resources/styles/grok.css`:
+```css
+.root {
+    /* Customize colors */
+    -primary-bg: #0A0A0A;
+    -accent-blue: #1D9BF0;
+    -success-green: #22C55E;
 
-### Code Style
-- Follow Java naming conventions
-- Use meaningful variable and method names
-- Add comprehensive javadoc comments
-- Maintain consistent indentation (4 spaces)
-- Keep methods focused and concise
+    /* Adjust fonts */
+    -font-family: "Your-Font", system-ui;
+    -font-size-body: 14px;
+}
+```
+
+### Adding New Features
+1. **UI Components**: Use Grok CSS classes (.grok-button, .grok-card, etc.)
+2. **Robot Commands**: Extend ESP32Command for new functionality
+3. **Controller Mappings**: Modify ControllerInput processing
+4. **Network Protocols**: Update NetworkManager for new communication
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 | Issue | Cause | Solution |
 |-------|-------|----------|
-| No robots discovered | Network/firewall | Check network connection, disable firewall |
-| Controller not detected | Drivers/compatibility | Install drivers, try different controller |
-| High latency | Network congestion | Use dedicated network, reduce interference |
-| Robot disconnects | Power/interference | Check power supply, reduce WiFi interference |
+| Interface appears broken | Missing CSS | Check grok.css is in classpath |
+| No robots found | Network connection | Verify WATCHTOWER network connection |
+| Controller not working | Driver issues | Install controller drivers, check USB |
+| Robot not responding | IP/Network | Verify robot IP and WATCHTOWER connection |
+| Animation stuttering | Performance | Reduce animation complexity or disable |
 
-### Debug Mode
-Enable verbose logging by adding JVM argument:
+### Network Diagnostics
 ```bash
-java -Dlogging.level.com.soccerbots=DEBUG -jar application.jar
+# Test UDP communication
+ping 192.168.1.100
+
+# Check network interface
+ipconfig /all
+
+# Verify WATCHTOWER connection
+netsh wlan show interfaces
 ```
 
 ## 🤝 Contributing
 
 ### Development Setup
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
+2. Ensure Java 17+ with JavaFX support
+3. Import as Maven project
+4. Run `mvn clean compile` to verify setup
+5. Make changes and test with Grok theme
 
 ### Code Guidelines
-- Follow existing code style and patterns
-- Add unit tests for new features
-- Update documentation for API changes
-- Test on multiple platforms when possible
+- Follow existing Grok theme patterns
+- Use CSS variables for consistent styling
+- Maintain 150-200ms animation timing
+- Test with different screen sizes
+- Update documentation for UI changes
 
 ## 📄 License
 
@@ -262,27 +313,28 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
+- **Grok AI** for design inspiration and aesthetic guidelines
+- **JavaFX Community** for modern UI framework support
 - **ESP32 Community** for excellent documentation and examples
-- **Arduino Project** for the development environment
 - **JInput Library** for controller support
-- **Jackson JSON** for efficient JSON processing
+- **Inter Font Family** for beautiful typography
 
 ## 📞 Support
 
 ### Getting Help
-- **Documentation**: Check Installation Guide and User Manual
-- **Issues**: Report bugs on the project repository
+- **Documentation**: Check User Manual and Project Structure guide
+- **Issues**: Report bugs with screenshots of Grok interface
 - **Community**: Join the SoccerBots development community
-- **Email**: Contact the development team for support
+- **Theme Issues**: Include CSS and JavaFX version details
 
 ### Version History
-- **v1.0.0** - Initial release with core functionality
-  - WiFi network management
-  - Robot discovery and control
-  - Controller input processing
-  - Bluetooth configuration
-  - Complete documentation
+- **v1.0.0** - Grok-themed JavaFX release
+  - Modern dark-mode interface with Grok AI aesthetics
+  - ESP32-specific binary communication protocol
+  - Manual robot addition and management
+  - Real-time controller input with smooth animations
+  - Professional typography and responsive design
 
 ---
 
-**Made with ❤️ for the robotics community**
+**Built with modern JavaFX and inspired by Grok AI design principles ✨**

@@ -1,0 +1,298 @@
+/* Modern Dark Theme for SoccerBots Control Station */
+
+.root {
+    -fx-background-color: #1e1e1e;
+    -fx-font-family: "Segoe UI", "San Francisco", "Helvetica Neue", sans-serif;
+    -fx-font-size: 14px;
+    -fx-text-fill: #ffffff;
+}
+
+/* Main Container */
+.main-container {
+    -fx-background-color: linear-gradient(to bottom, #2d2d30, #252526);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 10, 0, 0, 2);
+}
+
+/* Navigation Bar */
+.nav-bar {
+    -fx-background-color: linear-gradient(to bottom, #3c3c3c, #2d2d30);
+    -fx-border-color: #464647;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 10 20;
+}
+
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #cccccc;
+    -fx-font-size: 16px;
+    -fx-font-weight: 500;
+    -fx-padding: 12 24;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+    -fx-transition: all 0.2s ease;
+}
+
+.nav-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+    -fx-text-fill: #ffffff;
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.nav-button:pressed {
+    -fx-background-color: rgba(255, 255, 255, 0.2);
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+}
+
+.nav-button.active {
+    -fx-background-color: linear-gradient(to bottom, #0e639c, #1177bb);
+    -fx-text-fill: #ffffff;
+    -fx-effect: dropshadow(gaussian, rgba(14, 99, 156, 0.4), 8, 0, 0, 2);
+}
+
+/* Cards and Panels */
+.card {
+    -fx-background-color: #2d2d30;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0, 0, 2);
+    -fx-padding: 20;
+    -fx-border-color: #464647;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+}
+
+.card:hover {
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.4), 12, 0, 0, 4);
+    -fx-translate-y: -2;
+}
+
+.card-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+    -fx-padding: 0 0 10 0;
+}
+
+/* Status Indicators */
+.status-indicator {
+    -fx-background-radius: 50;
+    -fx-min-width: 12;
+    -fx-min-height: 12;
+    -fx-max-width: 12;
+    -fx-max-height: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 4, 0, 0, 1);
+}
+
+.status-connected {
+    -fx-background-color: #4caf50;
+    -fx-effect: dropshadow(gaussian, rgba(76, 175, 80, 0.6), 8, 0, 0, 0);
+}
+
+.status-disconnected {
+    -fx-background-color: #f44336;
+    -fx-effect: dropshadow(gaussian, rgba(244, 67, 54, 0.6), 8, 0, 0, 0);
+}
+
+.status-warning {
+    -fx-background-color: #ff9800;
+    -fx-effect: dropshadow(gaussian, rgba(255, 152, 0, 0.6), 8, 0, 0, 0);
+}
+
+/* Modern Buttons */
+.modern-button {
+    -fx-background-color: linear-gradient(to bottom, #0078d4, #106ebe);
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: 500;
+    -fx-padding: 10 20;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0, 120, 212, 0.3), 6, 0, 0, 2);
+}
+
+.modern-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #106ebe, #005a9e);
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+    -fx-effect: dropshadow(gaussian, rgba(0, 120, 212, 0.4), 8, 0, 0, 3);
+}
+
+.modern-button:pressed {
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+    -fx-background-color: linear-gradient(to bottom, #005a9e, #004578);
+}
+
+.danger-button {
+    -fx-background-color: linear-gradient(to bottom, #d32f2f, #b71c1c);
+    -fx-effect: dropshadow(gaussian, rgba(211, 47, 47, 0.3), 6, 0, 0, 2);
+}
+
+.danger-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #b71c1c, #8e0000);
+    -fx-effect: dropshadow(gaussian, rgba(211, 47, 47, 0.4), 8, 0, 0, 3);
+}
+
+.success-button {
+    -fx-background-color: linear-gradient(to bottom, #388e3c, #2e7d32);
+    -fx-effect: dropshadow(gaussian, rgba(56, 142, 60, 0.3), 6, 0, 0, 2);
+}
+
+.success-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #2e7d32, #1b5e20);
+    -fx-effect: dropshadow(gaussian, rgba(56, 142, 60, 0.4), 8, 0, 0, 3);
+}
+
+/* Text Fields */
+.modern-text-field {
+    -fx-background-color: #383838;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #5a5a5a;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 8 12;
+    -fx-font-size: 14px;
+}
+
+.modern-text-field:focused {
+    -fx-border-color: #0078d4;
+    -fx-effect: dropshadow(gaussian, rgba(0, 120, 212, 0.3), 6, 0, 0, 0);
+}
+
+/* Progress Bars */
+.progress-bar {
+    -fx-background-color: #404040;
+    -fx-background-radius: 10;
+}
+
+.progress-bar .bar {
+    -fx-background-color: linear-gradient(to right, #0078d4, #40a9ff);
+    -fx-background-radius: 10;
+    -fx-background-insets: 2;
+}
+
+/* Robot Cards */
+.robot-card {
+    -fx-background-color: #2d2d30;
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.3), 8, 0, 0, 2);
+    -fx-padding: 16;
+    -fx-border-color: #464647;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-min-width: 280;
+    -fx-max-width: 320;
+}
+
+.robot-card.connected {
+    -fx-border-color: #4caf50;
+    -fx-effect: dropshadow(gaussian, rgba(76, 175, 80, 0.2), 12, 0, 0, 2);
+}
+
+.robot-card.disconnected {
+    -fx-border-color: #f44336;
+    -fx-effect: dropshadow(gaussian, rgba(244, 67, 54, 0.2), 12, 0, 0, 2);
+}
+
+.robot-name {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+}
+
+.robot-ip {
+    -fx-font-size: 12px;
+    -fx-text-fill: #cccccc;
+}
+
+/* Controller Visualization */
+.controller-visual {
+    -fx-background-color: #383838;
+    -fx-background-radius: 12;
+    -fx-padding: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.2), 6, 0, 0, 2);
+}
+
+.joystick-circle {
+    -fx-fill: #5a5a5a;
+    -fx-stroke: #cccccc;
+    -fx-stroke-width: 2;
+}
+
+.joystick-dot {
+    -fx-fill: #0078d4;
+    -fx-effect: dropshadow(gaussian, rgba(0, 120, 212, 0.6), 6, 0, 0, 0);
+}
+
+/* Animations */
+.fade-in {
+    -fx-opacity: 0;
+}
+
+.slide-in {
+    -fx-translate-x: -50;
+    -fx-opacity: 0;
+}
+
+/* Scrollbars */
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .track {
+    -fx-background-color: #404040;
+    -fx-background-radius: 6;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #606060;
+    -fx-background-radius: 6;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #707070;
+}
+
+.scroll-bar .thumb:pressed {
+    -fx-background-color: #808080;
+}
+
+/* Menu Bar */
+.menu-bar {
+    -fx-background-color: #2d2d30;
+    -fx-border-color: #464647;
+    -fx-border-width: 0 0 1 0;
+}
+
+.menu {
+    -fx-text-fill: #cccccc;
+}
+
+.menu:showing {
+    -fx-background-color: #383838;
+}
+
+.menu-item {
+    -fx-background-color: #383838;
+    -fx-text-fill: #cccccc;
+}
+
+.menu-item:focused {
+    -fx-background-color: #0078d4;
+    -fx-text-fill: #ffffff;
+}
+
+/* Game Timer */
+.timer-display {
+    -fx-font-size: 36px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 4, 0, 0, 2);
+}
+
+.timer-controls {
+    -fx-spacing: 12;
+    -fx-alignment: center;
+}

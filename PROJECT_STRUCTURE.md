@@ -1,0 +1,457 @@
+# Project Structure Documentation
+
+This document provides a comprehensive overview of the SoccerBots Control Station project structure, including detailed explanations of each file and its purpose.
+
+## 📁 Directory Overview
+
+```
+SoccerBotsSoftwareJava/
+├── src/main/java/com/soccerbots/control/     # Main Java source code
+├── src/main/resources/                       # Resources (CSS, configs)
+├── esp32_robot_code/                         # ESP32 firmware
+├── docs/                                     # Documentation
+├── target/                                   # Build output
+├── pom.xml                                   # Maven configuration
+├── README.md                                 # Main documentation
+├── CLAUDE.md                                 # Development instructions
+└── .claude/                                  # Claude Code configuration
+```
+
+## 🎯 Core Java Application (`src/main/java/com/soccerbots/control/`)
+
+### Application Entry Point
+
+#### `RoboticsControlFXApp.java`
+**Purpose**: JavaFX application launcher with Grok theme integration
+**Key Features**:
+- Initializes JavaFX application
+- Loads Grok CSS theme (`grok.css`)
+- Sets up main window (1400x900, min 1200x800)
+- Handles application shutdown and cleanup
+- Configures window properties and styling
+
+**Key Methods**:
+- `start(Stage)` - JavaFX application initialization
+- `main(String[])` - Application entry point
+
+---
+
+## 🎨 User Interface (`gui/` package)
+
+### Main Window Management
+
+#### `MainWindow.java`
+**Purpose**: Primary application window with Grok-inspired navigation
+**Key Features**:
+- BorderPane layout with header navigation
+- Pill-shaped navigation buttons with hover animations
+- Content area with smooth panel transitions
+- Emergency stop functionality
+- Status bar with live connection counts
+- Grok theme integration throughout
+
+**Key Components**:
+- Header bar with navigation pills
+- Content area with fade/scale transitions
+- Status bar with real-time updates
+- Emergency stop button with confirmation
+
+**Key Methods**:
+- `createNavigationBar()` - Grok-styled header
+- `showPanel()` - Animated panel switching
+- `handleEmergencyStop()` - Safety control
+
+### Robot Management
+
+#### `RobotPanel.java`
+**Purpose**: ESP32 robot management with modern card-based interface
+**Key Features**:
+- WATCHTOWER network status display
+- Manual robot addition dialog
+- Robot cards with live status indicators
+- Teleop mode control
+- Grok-themed card animations
+
+**Key Components**:
+- Network status section with connection info
+- Add robot dialog with name/IP inputs
+- Robot cards with status indicators and actions
+- Teleop control toggle
+
+**Key Methods**:
+- `createHeader()` - Network status and controls
+- `createRobotCard()` - Individual robot display
+- `showAddRobotDialog()` - Manual robot addition
+- `toggleTeleopMode()` - Game state control
+
+### Controller Management
+
+#### `ControllerPanel.java`
+**Purpose**: USB controller detection and pairing interface
+**Key Features**:
+- Automatic controller detection
+- Controller cards with live input display
+- Robot pairing interface
+- Refresh functionality
+- Grok-styled components
+
+**Key Components**:
+- Controller detection status
+- Controller cards with input visualization
+- Pairing controls and indicators
+
+**Key Methods**:
+- `createControllerCards()` - Dynamic controller display
+- `updateControllerDisplay()` - Live status updates
+- `refreshControllers()` - Manual detection trigger
+
+### Network Configuration
+
+#### `NetworkPanel.java`
+**Purpose**: WATCHTOWER network monitoring and connection testing
+**Key Features**:
+- Network status monitoring
+- ESP32 communication port display
+- Direct robot connection testing
+- Connection status indicators
+- Grok-themed status displays
+
+**Key Components**:
+- Network status section
+- ESP32 communication info
+- Direct connection testing
+
+**Key Methods**:
+- `updateNetworkStatus()` - Live network monitoring
+- `connectToRobot()` - Direct connection testing
+
+### System Monitoring
+
+#### `MonitoringPanel.java`
+**Purpose**: System performance and status monitoring
+**Key Features**:
+- Real-time system metrics
+- Network performance monitoring
+- Robot communication status
+- Controller input monitoring
+
+#### `SettingsPanel.java`
+**Purpose**: Application configuration and preferences
+**Key Features**:
+- Theme customization options
+- Network settings
+- Controller configuration
+- Application preferences
+
+### Dialog Components
+
+#### `WiFiConfigDialog.java`
+**Purpose**: ESP32 network information display (modified for ESP32)
+**Key Features**:
+- ESP32 network requirements info
+- WATCHTOWER connection status
+- Informational dialog for robot setup
+- Grok-themed dialog styling
+
+---
+
+## 🌐 Network Communication (`network/` package)
+
+#### `NetworkManager.java`
+**Purpose**: ESP32 UDP communication and network management
+**Key Features**:
+- ESP32 binary protocol (port 2367)
+- WATCHTOWER network detection
+- UDP packet transmission
+- Network status monitoring
+- Binary command encoding
+
+**Protocol Details**:
+- **Port**: 2367 for ESP32 communication
+- **Expected Network**: WATCHTOWER
+- **Packet Format**: 24-byte binary (16 + 6 + 2)
+- **Command Types**: Movement commands and game status
+
+**Key Methods**:
+- `sendRobotCommand()` - Binary UDP transmission
+- `sendGameStatus()` - Text-based status commands
+- `isConnectedToExpectedNetwork()` - WATCHTOWER verification
+- `checkCurrentNetworkStatus()` - Windows network detection
+
+---
+
+## 🤖 Robot Management (`robot/` package)
+
+### Core Robot Management
+
+#### `RobotManager.java`
+**Purpose**: ESP32 robot lifecycle and communication management
+**Key Features**:
+- Manual robot addition/removal
+- Game state management (teleop/standby)
+- Controller input processing
+- Emergency stop functionality
+- Robot status tracking
+
+**Game States**:
+- **Standby**: No movement allowed
+- **Teleop**: Full controller input enabled
+
+**Key Methods**:
+- `addRobot()` - Manual robot registration
+- `sendMovementCommand()` - Normalized input to ESP32
+- `setGameState()` - Global robot control
+- `emergencyStopAll()` - Safety shutdown
+
+### Data Models
+
+#### `Robot.java`
+**Purpose**: Individual robot data model and status tracking
+**Key Features**:
+- Robot identification (name, ID, IP)
+- Connection status tracking
+- Last seen timestamp
+- Controller pairing information
+
+**Key Properties**:
+- `name` - Display name
+- `id` - Unique identifier
+- `ipAddress` - Network address
+- `lastSeenTime` - Connection tracking
+- `pairedControllerId` - Controller assignment
+
+#### `ESP32Command.java`
+**Purpose**: Binary command structure for ESP32 communication
+**Key Features**:
+- Controller input normalization (-1.0 to 1.0 → 0-255)
+- PlayStation-style button mapping
+- Binary packet construction
+- Movement threshold detection
+
+**Packet Structure** (24 bytes):
+```
+Bytes 0-15:  Robot name (null-padded)
+Bytes 16-17: Left stick (X, Y)
+Bytes 18-19: Right stick (X, Y)
+Bytes 20-21: Reserved axes
+Byte 22:     Button flags (Cross, Circle, Square, Triangle)
+Byte 23:     Reserved buttons
+```
+
+**Key Methods**:
+- `fromControllerInput()` - Normalize controller data
+- `createStopCommand()` - Generate neutral command
+- `hasMovement()` - Detect significant input
+
+---
+
+## 🎮 Controller Input (`controller/` package)
+
+### Input Management
+
+#### `ControllerManager.java`
+**Purpose**: USB controller detection, polling, and input processing
+**Key Features**:
+- Automatic controller detection (DirectInput)
+- 60Hz input polling (16ms intervals)
+- Controller-robot pairing management
+- Emergency stop integration
+- Multi-controller support
+
+**Supported Controllers**:
+- Xbox One/Series controllers
+- PlayStation 4/5 controllers
+- Generic DirectInput gamepads
+
+**Key Methods**:
+- `detectControllers()` - USB device scanning
+- `pollControllerInputs()` - Real-time input reading
+- `pairControllerWithRobot()` - Assignment management
+- `activateEmergencyStop()` - Safety control
+
+### Controller Abstraction
+
+#### `GameController.java`
+**Purpose**: Individual controller wrapper and state management
+**Key Features**:
+- Controller identification
+- Input state caching
+- Connection status monitoring
+- Button state tracking
+
+#### `ControllerInput.java`
+**Purpose**: Normalized input data structure
+**Key Features**:
+- Stick position normalization (-1.0 to 1.0)
+- Button state management (16 buttons)
+- Deadzone application (10% default)
+- Movement threshold detection (5% default)
+
+**Input Mapping**:
+- **Left Stick**: Forward/backward, sideways movement
+- **Right Stick**: Rotation, reserved axis
+- **Buttons**: 16-button array with hash-based mapping
+- **Triggers**: Analog trigger values
+
+---
+
+## 🎨 Resources (`src/main/resources/`)
+
+### Styling
+
+#### `styles/grok.css`
+**Purpose**: Grok AI-inspired theme implementation
+**Key Features**:
+- CSS variables for consistent theming
+- Dark-mode color palette
+- Modern typography (Inter font family)
+- Smooth animations (150-200ms)
+- Responsive design patterns
+
+**Color System**:
+```css
+-primary-bg: #0A0A0A        /* Deep black background */
+-secondary-bg: #1A1A1A      /* Card backgrounds */
+-tertiary-bg: #333333       /* Button backgrounds */
+-accent-blue: #1D9BF0       /* Interactive elements */
+-success-green: #22C55E     /* Success states */
+-warning-yellow: #EAB308    /* Warning states */
+-error-red: #EF4444         /* Error states */
+```
+
+**Component Classes**:
+- `.grok-card` - Main container styling
+- `.grok-button` - Interactive buttons with variants
+- `.grok-text-field` - Modern input fields
+- `.grok-title`, `.grok-subtitle`, `.grok-body` - Typography hierarchy
+
+---
+
+## 🔧 ESP32 Firmware (`esp32_robot_code/`)
+
+### Robot Firmware
+
+#### `esp32_robot_code/` (Directory)
+**Purpose**: ESP32 Arduino firmware for robot communication
+**Key Features**:
+- WATCHTOWER network connectivity
+- UDP command listener (port 2367)
+- Binary protocol parsing
+- Movement command processing
+
+**Note**: This directory contains the ESP32 firmware provided by the user. The Java application is designed to work specifically with this firmware's communication protocol.
+
+---
+
+## 🛠️ Build Configuration
+
+### Maven Configuration
+
+#### `pom.xml`
+**Purpose**: Maven build configuration with JavaFX dependencies
+**Key Features**:
+- JavaFX 21.0.1 integration
+- JInput library for controller support
+- SLF4J + Logback logging
+- Assembly plugin for fat JAR creation
+- Java 17 target compatibility
+
+**Dependencies**:
+- `javafx-controls` - UI components
+- `javafx-fxml` - FXML support
+- `jinput` - Controller input
+- `slf4j-api` + `logback-classic` - Logging
+- `jackson-databind` - JSON processing
+
+**Build Outputs**:
+- `robotics-control-system-1.0.0.jar` - Standard JAR
+- `robotics-control-system-1.0.0-jar-with-dependencies.jar` - Executable JAR
+
+---
+
+## 📚 Documentation
+
+#### `README.md`
+**Purpose**: Main project documentation with Grok theme information
+**Content**: Features, setup, usage, troubleshooting
+
+#### `CLAUDE.md`
+**Purpose**: Development instructions for Claude Code
+**Content**: Project overview, build commands, architecture notes
+
+#### `PROJECT_STRUCTURE.md` (This file)
+**Purpose**: Detailed file-by-file project explanation
+
+---
+
+## 🎯 Key Design Patterns
+
+### Architecture Patterns
+
+1. **MVC Pattern**: Clear separation of UI (View), business logic (Controller), and data (Model)
+2. **Observer Pattern**: Real-time updates for robot and controller status
+3. **Strategy Pattern**: Different controller input mappings
+4. **Command Pattern**: ESP32 command structure and execution
+
+### JavaFX Patterns
+
+1. **FXML-less Approach**: Programmatic UI construction for better control
+2. **CSS Theming**: Centralized styling with CSS variables
+3. **Animation Framework**: Timeline-based smooth transitions
+4. **Event-Driven**: Reactive UI updates based on system events
+
+### Network Patterns
+
+1. **UDP Communication**: Low-latency robot control
+2. **Binary Protocol**: Efficient data transmission
+3. **Heartbeat Monitoring**: Connection status tracking
+4. **Broadcast Discovery**: Network device detection
+
+---
+
+## 🔄 Data Flow
+
+### Controller Input Flow
+```
+USB Controller → JInput → ControllerManager →
+ControllerInput → RobotManager → ESP32Command →
+NetworkManager → UDP → ESP32 Robot
+```
+
+### UI Update Flow
+```
+System Events → Manager Classes → JavaFX Platform.runLater() →
+UI Components → CSS Animations → Visual Updates
+```
+
+### Network Status Flow
+```
+Network Interface → NetworkManager → Status Updates →
+UI Panels → Real-time Display
+```
+
+---
+
+## 🚀 Deployment
+
+### Build Artifacts
+
+1. **Development JAR**: `target/robotics-control-system-1.0.0.jar`
+   - Requires external dependencies
+   - For development and testing
+
+2. **Production JAR**: `target/robotics-control-system-1.0.0-jar-with-dependencies.jar`
+   - Self-contained executable
+   - Includes all dependencies
+   - Ready for distribution
+
+### Runtime Requirements
+
+- **Java 17+** with JavaFX support
+- **DirectInput drivers** for controller support
+- **Network access** to WATCHTOWER WiFi
+- **UDP port 2367** availability for ESP32 communication
+
+---
+
+This structure provides a modern, maintainable codebase with clear separation of concerns, robust error handling, and a professional user interface inspired by Grok AI design principles.

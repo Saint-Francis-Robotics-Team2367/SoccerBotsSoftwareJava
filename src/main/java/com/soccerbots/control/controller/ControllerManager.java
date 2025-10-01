@@ -158,9 +158,10 @@ public class ControllerManager {
                 if (pairedRobotId != null && !emergencyStopActive && input.hasMovement()) {
                     robotManager.sendMovementCommand(
                         pairedRobotId,
-                        input.getForward(),
-                        input.getSideways(),
-                        input.getRotation()
+                        input.getLeftStickX(),
+                        input.getLeftStickY(),
+                        input.getRightStickX(),
+                        input.getRightStickY()
                     );
                 } else if (pairedRobotId != null && !emergencyStopActive && input.isStopCommand()) {
                     robotManager.sendStopCommand(pairedRobotId);

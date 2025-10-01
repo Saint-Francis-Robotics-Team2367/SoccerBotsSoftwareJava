@@ -3,228 +3,298 @@ package com.soccerbots.control.gui;
 import com.soccerbots.control.network.NetworkManager;
 import com.soccerbots.control.robot.RobotManager;
 import com.soccerbots.control.controller.ControllerManager;
-import com.soccerbots.control.gui.monitoring.RobotStatusPanel;
-import com.soccerbots.control.gui.monitoring.SystemLogPanel;
-import com.soccerbots.control.gui.monitoring.PerformanceMonitor;
+import javafx.animation.FadeTransition;
+import javafx.animation.ScaleTransition;
+import javafx.animation.TranslateTransition;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-
-public class MainWindow extends JFrame {
+public class MainWindow {
     private static final Logger logger = LoggerFactory.getLogger(MainWindow.class);
-    
+
     private NetworkManager networkManager;
     private RobotManager robotManager;
     private ControllerManager controllerManager;
 
-    private NetworkPanel networkPanel;
+    private BorderPane root;
+    private VBox navigationBar;
+    private StackPane contentArea;
+    private HBox statusBar;
+    private Button emergencyStopButton;
+
+    // Navigation buttons
+    private Button robotsTabBtn;
+    private Button controllersTabBtn;
+    private Button networkTabBtn;
+    private Button monitoringTabBtn;
+    private Button settingsTabBtn;
+
+    // Content panels
     private RobotPanel robotPanel;
     private ControllerPanel controllerPanel;
-    private StatusPanel statusPanel;
-    private GameTimerPanel gameTimerPanel;
-    private JButton emergencyStopButton;
-    private RobotStatusPanel robotStatusPanel;
+    private NetworkPanel networkPanel;
+    private MonitoringPanel monitoringPanel;
     private SettingsPanel settingsPanel;
-    private SystemLogPanel systemLogPanel;
-    private PerformanceMonitor performanceMonitor;
-    private JTabbedPane rightTabbedPane;
     
     public MainWindow() {
         initializeManagers();
-        initializeGUI();
+        createGUI();
         setupEventHandlers();
+        logger.info("JavaFX MainWindow initialized successfully");
     }
-    
+
     private void initializeManagers() {
         networkManager = new NetworkManager();
         robotManager = new RobotManager(networkManager);
         controllerManager = new ControllerManager(robotManager);
     }
-    
-    private void initializeGUI() {
-        setTitle("SoccerBots Robotics Control System v1.0");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1400, 900);
-        setLocationRelativeTo(null);
+    private void createGUI() {
+        root = new BorderPane();
+        root.getStyleClass().add("main-window");
 
-        setLayout(new BorderLayout());
+        createNavigationBar();
+        createContentArea();
+        createStatusBar();
 
-        createMenuBar();
-        createMainPanels();
-        layoutComponents();
+        root.setTop(navigationBar);
+        root.setCenter(contentArea);
+        root.setBottom(statusBar);
 
-        statusPanel = new StatusPanel();
-        add(statusPanel, BorderLayout.SOUTH);
+        // Initialize panels
+        initializePanels();
 
-        updateStatusConnections();
-
-        // Add initial log entries
-        SystemLogPanel.logInfo("Application started successfully");
-        SystemLogPanel.logInfo("Managers initialized");
-        SystemLogPanel.logInfo("GUI components loaded");
+        // Show robots panel by default
+        showRobotsPanel();
     }
-    
-    private void createMenuBar() {
-        JMenuBar menuBar = new JMenuBar();
-        
-        JMenu fileMenu = new JMenu("File");
-        JMenuItem exitItem = new JMenuItem("Exit");
-        exitItem.addActionListener(e -> System.exit(0));
-        fileMenu.add(exitItem);
-        
-        JMenu settingsMenu = new JMenu("Settings");
-        JMenuItem settingsItem = new JMenuItem("Preferences");
-        settingsItem.addActionListener(e -> showSettingsDialog());
-        settingsMenu.add(settingsItem);
 
-        JMenu helpMenu = new JMenu("Help");
-        JMenuItem aboutItem = new JMenuItem("About");
-        aboutItem.addActionListener(e -> showAboutDialog());
-        helpMenu.add(aboutItem);
+    private void createNavigationBar() {
+        navigationBar = new VBox();
+        navigationBar.getStyleClass().add("header-bar");
+        navigationBar.setPrefHeight(80);
 
-        menuBar.add(fileMenu);
-        menuBar.add(settingsMenu);
-        menuBar.add(helpMenu);
-        
-        setJMenuBar(menuBar);
+        // Main header container
+        HBox headerContainer = new HBox();
+        headerContainer.getStyleClass().add("header-bar");
+        headerContainer.setAlignment(Pos.CENTER_LEFT);
+        headerContainer.setPadding(new Insets(16, 24, 16, 24));
+        headerContainer.setSpacing(24);
+
+        // Application title with Grok styling
+        Text titleText = new Text("SoccerBots");
+        titleText.getStyleClass().add("logo-text");
+
+        // Navigation buttons container
+        HBox navButtons = new HBox(8);
+        navButtons.setAlignment(Pos.CENTER_LEFT);
+
+        robotsTabBtn = createNavButton("Robots");
+        controllersTabBtn = createNavButton("Controllers");
+        networkTabBtn = createNavButton("Network");
+        monitoringTabBtn = createNavButton("Monitoring");
+        settingsTabBtn = createNavButton("Settings");
+
+        navButtons.getChildren().addAll(
+            robotsTabBtn, controllersTabBtn, networkTabBtn, monitoringTabBtn, settingsTabBtn
+        );
+
+        // Emergency stop button with Grok styling
+        emergencyStopButton = new Button("EMERGENCY STOP");
+        emergencyStopButton.getStyleClass().addAll("grok-button", "danger");
+        emergencyStopButton.setPrefWidth(160);
+        emergencyStopButton.setPrefHeight(36);
+        emergencyStopButton.setOnAction(this::handleEmergencyStop);
+
+        // Spacer to push emergency button to the right
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        headerContainer.getChildren().addAll(titleText, navButtons, spacer, emergencyStopButton);
+        navigationBar.getChildren().add(headerContainer);
     }
-    
-    private void createMainPanels() {
-        networkPanel = new NetworkPanel(networkManager);
+
+    private Button createNavButton(String text) {
+        Button button = new Button(text);
+        button.getStyleClass().add("nav-button");
+        button.setPrefHeight(36);
+        button.setMinWidth(80);
+
+        // Add Grok-style hover animation
+        button.setOnMouseEntered(e -> {
+            ScaleTransition st = new ScaleTransition(Duration.millis(150), button);
+            st.setToX(1.02);
+            st.setToY(1.02);
+            st.play();
+        });
+
+        button.setOnMouseExited(e -> {
+            ScaleTransition st = new ScaleTransition(Duration.millis(150), button);
+            st.setToX(1.0);
+            st.setToY(1.0);
+            st.play();
+        });
+
+        return button;
+    }
+
+    private void createContentArea() {
+        contentArea = new StackPane();
+        contentArea.getStyleClass().add("content-area");
+    }
+
+    private void createStatusBar() {
+        statusBar = new HBox(24);
+        statusBar.getStyleClass().add("header-bar");
+        statusBar.setPadding(new Insets(12, 24, 12, 24));
+        statusBar.setAlignment(Pos.CENTER_LEFT);
+        statusBar.setPrefHeight(48);
+        statusBar.setStyle("-fx-border-color: -border-primary; -fx-border-width: 1 0 0 0;");
+
+        Label networkStatusLabel = new Label("Network: Disconnected");
+        networkStatusLabel.getStyleClass().add("grok-caption");
+
+        Label robotCountLabel = new Label("Robots: 0");
+        robotCountLabel.getStyleClass().add("grok-caption");
+
+        Label controllerCountLabel = new Label("Controllers: 0");
+        controllerCountLabel.getStyleClass().add("grok-caption");
+
+        statusBar.getChildren().addAll(networkStatusLabel, robotCountLabel, controllerCountLabel);
+    }
+
+    private void initializePanels() {
         robotPanel = new RobotPanel(robotManager);
         controllerPanel = new ControllerPanel(controllerManager);
-        gameTimerPanel = new GameTimerPanel(controllerManager);
-        robotStatusPanel = new RobotStatusPanel();
+        networkPanel = new NetworkPanel(networkManager);
+        monitoringPanel = new MonitoringPanel();
         settingsPanel = new SettingsPanel();
-        systemLogPanel = new SystemLogPanel();
-        performanceMonitor = new PerformanceMonitor();
 
-        // Set up static log panel instance for global logging
-        SystemLogPanel.setInstance(systemLogPanel);
-
-        // Create emergency stop button
-        emergencyStopButton = new JButton("EMERGENCY STOP");
-        emergencyStopButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
-        emergencyStopButton.setPreferredSize(new Dimension(200, 40));
-        emergencyStopButton.addActionListener(this::handleEmergencyStop);
+        // Set up navigation button actions
+        robotsTabBtn.setOnAction(e -> showRobotsPanel());
+        controllersTabBtn.setOnAction(e -> showControllersPanel());
+        networkTabBtn.setOnAction(e -> showNetworkPanel());
+        monitoringTabBtn.setOnAction(e -> showMonitoringPanel());
+        settingsTabBtn.setOnAction(e -> showSettingsPanel());
     }
-    
-    private void layoutComponents() {
-        JPanel leftPanel = new JPanel(new BorderLayout());
-        leftPanel.add(networkPanel, BorderLayout.NORTH);
 
-        // Create center-left panel for controller and timer
-        JPanel centerLeftPanel = new JPanel(new BorderLayout());
-        centerLeftPanel.add(controllerPanel, BorderLayout.CENTER);
-        centerLeftPanel.add(gameTimerPanel, BorderLayout.SOUTH);
-        leftPanel.add(centerLeftPanel, BorderLayout.CENTER);
+    private void showPanel(Parent panel, Button activeButton) {
+        // Clear active state from all buttons
+        robotsTabBtn.getStyleClass().remove("active");
+        controllersTabBtn.getStyleClass().remove("active");
+        networkTabBtn.getStyleClass().remove("active");
+        monitoringTabBtn.getStyleClass().remove("active");
+        settingsTabBtn.getStyleClass().remove("active");
 
-        // Emergency stop button at bottom of left panel
-        JPanel emergencyPanel = new JPanel(new FlowLayout());
-        emergencyPanel.add(emergencyStopButton);
-        leftPanel.add(emergencyPanel, BorderLayout.SOUTH);
+        // Set active state for clicked button
+        activeButton.getStyleClass().add("active");
 
-        leftPanel.setPreferredSize(new Dimension(420, 0));
+        // Animate panel transition with Grok-style timing
+        contentArea.getChildren().clear();
+        contentArea.getChildren().add(panel);
 
-        // Create right tabbed pane for monitoring and settings
-        rightTabbedPane = new JTabbedPane();
-        rightTabbedPane.addTab("Robots", robotPanel);
-        rightTabbedPane.addTab("Robot Status", robotStatusPanel);
+        // Grok-style fade in animation (200ms)
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(200), panel);
+        fadeIn.setFromValue(0.0);
+        fadeIn.setToValue(1.0);
 
-        // Create monitoring panel with sub-tabs
-        JTabbedPane monitoringTabs = new JTabbedPane();
-        monitoringTabs.addTab("System Log", systemLogPanel);
-        monitoringTabs.addTab("Performance", performanceMonitor);
-        rightTabbedPane.addTab("Monitoring", monitoringTabs);
+        // Subtle scale animation for modern feel
+        ScaleTransition scaleIn = new ScaleTransition(Duration.millis(200), panel);
+        scaleIn.setFromX(0.98);
+        scaleIn.setFromY(0.98);
+        scaleIn.setToX(1.0);
+        scaleIn.setToY(1.0);
 
-        rightTabbedPane.addTab("Settings", settingsPanel);
-        rightTabbedPane.setPreferredSize(new Dimension(500, 0));
-
-        add(leftPanel, BorderLayout.WEST);
-        add(rightTabbedPane, BorderLayout.CENTER);
+        fadeIn.play();
+        scaleIn.play();
     }
-    
+
+    private void showRobotsPanel() {
+        showPanel(robotPanel.getRoot(), robotsTabBtn);
+    }
+
+    private void showControllersPanel() {
+        showPanel(controllerPanel.getRoot(), controllersTabBtn);
+    }
+
+    private void showNetworkPanel() {
+        showPanel(networkPanel.getRoot(), networkTabBtn);
+    }
+
+    private void showMonitoringPanel() {
+        showPanel(monitoringPanel.getRoot(), monitoringTabBtn);
+    }
+
+    private void showSettingsPanel() {
+        showPanel(settingsPanel.getRoot(), settingsTabBtn);
+    }
+
     private void setupEventHandlers() {
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                cleanup();
-            }
+        // Start status update timer
+        Platform.runLater(() -> {
+            javafx.animation.Timeline timeline = new javafx.animation.Timeline(
+                new javafx.animation.KeyFrame(Duration.seconds(1), e -> updateStatusConnections())
+            );
+            timeline.setCycleCount(javafx.animation.Timeline.INDEFINITE);
+            timeline.play();
         });
-        
-        Timer statusUpdateTimer = new Timer(1000, e -> updateStatusConnections());
-        statusUpdateTimer.start();
     }
 
-    private void handleEmergencyStop(java.awt.event.ActionEvent e) {
+    private void handleEmergencyStop(javafx.event.ActionEvent e) {
         boolean isCurrentlyActive = controllerManager.isEmergencyStopActive();
 
         if (isCurrentlyActive) {
-            // Deactivate emergency stop
             controllerManager.deactivateEmergencyStop();
             emergencyStopButton.setText("EMERGENCY STOP");
-            emergencyStopButton.setBackground(new Color(220, 53, 69));
+            emergencyStopButton.getStyleClass().remove("success");
+            emergencyStopButton.getStyleClass().add("danger");
             logger.info("Emergency stop deactivated by user");
-            SystemLogPanel.logInfo("Emergency stop deactivated - normal operation resumed");
         } else {
-            // Activate emergency stop
-            int result = JOptionPane.showConfirmDialog(
-                this,
-                "This will immediately stop all robot movement.\nAre you sure?",
-                "Emergency Stop",
-                JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE
-            );
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("Emergency Stop");
+            alert.setHeaderText("Emergency Stop Confirmation");
+            alert.setContentText("This will immediately stop all robot movement.\nAre you sure?");
 
-            if (result == JOptionPane.YES_OPTION) {
-                controllerManager.activateEmergencyStop();
-                emergencyStopButton.setText("RESUME CONTROL");
-                emergencyStopButton.setBackground(new Color(255, 193, 7));
-                logger.warn("Emergency stop activated by user");
-                SystemLogPanel.logWarn("Emergency stop activated by user");
-            }
+            alert.showAndWait().ifPresent(response -> {
+                if (response == ButtonType.OK) {
+                    controllerManager.activateEmergencyStop();
+                    emergencyStopButton.setText("RESUME CONTROL");
+                    emergencyStopButton.getStyleClass().remove("danger");
+                    emergencyStopButton.getStyleClass().add("success");
+                    logger.warn("Emergency stop activated by user");
+                }
+            });
         }
     }
-    
+
     private void updateStatusConnections() {
-        if (statusPanel != null) {
-            statusPanel.updateNetworkStatus(networkManager.isNetworkActive());
-            statusPanel.updateRobotCount(robotManager.getConnectedRobotCount());
-            statusPanel.updateControllerCount(controllerManager.getConnectedControllerCount());
-        }
-    }
-    
-    private void showAboutDialog() {
-        String message = "SoccerBots Robotics Control System v1.0\n\n" +
-                        "A low-latency control system for ESP32-based soccer robots.\n\n" +
-                        "Features:\n" +
-                        "• WiFi network management\n" +
-                        "• Multiple robot control\n" +
-                        "• Controller pairing & mapping\n" +
-                        "• Real-time status monitoring\n" +
-                        "• Emergency stop control\n" +
-                        "• Game timer with auto-stop\n" +
-                        "• Customizable themes\n" +
-                        "• Network traffic monitoring\n" +
-                        "• Robot connectivity status";
+        Platform.runLater(() -> {
+            if (statusBar != null && statusBar.getChildren().size() >= 3) {
+                Label networkLabel = (Label) statusBar.getChildren().get(0);
+                Label robotLabel = (Label) statusBar.getChildren().get(1);
+                Label controllerLabel = (Label) statusBar.getChildren().get(2);
 
-        JOptionPane.showMessageDialog(this, message, "About", JOptionPane.INFORMATION_MESSAGE);
+                networkLabel.setText("Network: " + (networkManager.isNetworkActive() ? "Connected" : "Disconnected"));
+                robotLabel.setText("Robots: " + robotManager.getConnectedRobotCount());
+                controllerLabel.setText("Controllers: " + controllerManager.getConnectedControllerCount());
+            }
+        });
     }
 
-    private void showSettingsDialog() {
-        rightTabbedPane.setSelectedComponent(settingsPanel);
+    public Parent getRoot() {
+        return root;
     }
 
-    
-    private void cleanup() {
+    public void shutdown() {
         logger.info("Shutting down application");
-        if (gameTimerPanel != null) {
-            gameTimerPanel.shutdown();
-        }
         if (controllerManager != null) {
             controllerManager.shutdown();
         }

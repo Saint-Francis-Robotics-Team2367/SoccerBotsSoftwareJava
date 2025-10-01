@@ -2,12 +2,16 @@ package com.soccerbots.control.gui;
 
 import com.soccerbots.control.robot.Robot;
 import com.soccerbots.control.robot.RobotManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 
 public class WiFiConfigDialog extends JDialog {
+    private static final Logger logger = LoggerFactory.getLogger(WiFiConfigDialog.class);
+
     private final RobotManager robotManager;
     private final Robot robot;
     
@@ -103,15 +107,17 @@ public class WiFiConfigDialog extends JDialog {
         SwingWorker<Void, Void> worker = new SwingWorker<Void, Void>() {
             @Override
             protected Void doInBackground() {
-                robotManager.configureRobotWiFi(robot.getId(), ssid, password);
+                // ESP32 robots are pre-configured for WATCHTOWER network
+                // WiFi configuration is not supported for ESP32 robots
+                logger.info("WiFi configuration not supported for ESP32 robots");
                 return null;
             }
             
             @Override
             protected void done() {
-                JOptionPane.showMessageDialog(WiFiConfigDialog.this, 
-                    "WiFi configuration sent to robot.\nThe robot will restart and connect to the new network.", 
-                    "Configuration Sent", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(WiFiConfigDialog.this,
+                    "ESP32 robots are pre-configured to connect to the WATCHTOWER network.\nWiFi configuration is not supported for ESP32 robots.",
+                    "ESP32 Network Info", JOptionPane.INFORMATION_MESSAGE);
                 dispose();
             }
         };

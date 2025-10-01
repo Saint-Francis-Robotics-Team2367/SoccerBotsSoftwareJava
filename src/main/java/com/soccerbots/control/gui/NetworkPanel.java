@@ -1,362 +1,202 @@
 package com.soccerbots.control.gui;
 
 import com.soccerbots.control.network.NetworkManager;
-import com.soccerbots.control.gui.monitoring.NetworkTrafficGraph;
+import javafx.application.Platform;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
-import javax.swing.border.TitledBorder;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.util.List;
-
-public class NetworkPanel extends JPanel {
+public class NetworkPanel {
     private static final Logger logger = LoggerFactory.getLogger(NetworkPanel.class);
 
     private final NetworkManager networkManager;
-
-    private JRadioButton hostNetworkRadio;
-    private JRadioButton connectNetworkRadio;
-    private JTextField hostSSIDField;
-    private JPasswordField hostPasswordField;
-    private JComboBox<String> availableNetworksCombo;
-    private JPasswordField connectPasswordField;
-    private JButton startStopButton;
-    private JLabel statusLabel;
-    private JButton refreshNetworksButton;
-    private NetworkTrafficGraph trafficGraph;
-    private JLabel connectionDetailsLabel;
-    private JProgressBar signalStrengthBar;
-    private Timer networkStatsTimer;
+    private VBox root;
+    private Label networkStatusLabel;
+    private Label robotPortLabel;
+    private TextField robotIpField;
+    private Button connectButton;
+    private Button disconnectButton;
 
     public NetworkPanel(NetworkManager networkManager) {
         this.networkManager = networkManager;
-        initializeComponents();
-        layoutComponents();
+        createGUI();
         setupEventHandlers();
-        updateUIElements();
+        startStatusUpdater();
     }
 
-    private void initializeComponents() {
-        setPreferredSize(new Dimension(400, 450));
-        setBorder(BorderFactory.createTitledBorder("Network Configuration"));
+    private void createGUI() {
+        root = new VBox(24);
+        root.setPadding(new Insets(24));
+        root.getStyleClass().add("grok-card");
 
-        hostNetworkRadio = new JRadioButton("Host Own Network", true);
-        connectNetworkRadio = new JRadioButton("Connect to Existing Network");
-
-        ButtonGroup networkModeGroup = new ButtonGroup();
-        networkModeGroup.add(hostNetworkRadio);
-        networkModeGroup.add(connectNetworkRadio);
-
-        hostSSIDField = new JTextField("SoccerBots_Network");
-        hostSSIDField.setPreferredSize(new Dimension(200, 25));
-        hostSSIDField.setMinimumSize(new Dimension(150, 25));
-
-        hostPasswordField = new JPasswordField("soccerbots123");
-        hostPasswordField.setPreferredSize(new Dimension(200, 25));
-        hostPasswordField.setMinimumSize(new Dimension(150, 25));
-
-        availableNetworksCombo = new JComboBox<>();
-        availableNetworksCombo.setPreferredSize(new Dimension(180, 25));
-        availableNetworksCombo.setMinimumSize(new Dimension(150, 25));
-
-        connectPasswordField = new JPasswordField();
-        connectPasswordField.setPreferredSize(new Dimension(200, 25));
-        connectPasswordField.setMinimumSize(new Dimension(150, 25));
-
-        startStopButton = new JButton("Start Network");
-        refreshNetworksButton = new JButton("Refresh");
-
-        statusLabel = new JLabel("Network: Disconnected");
-
-        // Enhanced monitoring components
-        trafficGraph = new NetworkTrafficGraph();
-        connectionDetailsLabel = new JLabel("<html>IP: N/A<br>Signal: N/A<br>Speed: N/A</html>");
-
-        signalStrengthBar = new JProgressBar(0, 100);
-        signalStrengthBar.setStringPainted(true);
-        signalStrengthBar.setString("Signal: 0%");
+        createHeader();
+        createNetworkSettings();
+        createRobotConnection();
+        updateNetworkStatus();
     }
 
-    private void layoutComponents() {
-        setLayout(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.anchor = GridBagConstraints.WEST;
+    private void createHeader() {
+        Text titleText = new Text("Network Configuration");
+        titleText.getStyleClass().add("grok-title");
+        root.getChildren().add(titleText);
+    }
 
-        // Network mode selection
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
-        add(hostNetworkRadio, gbc);
+    private void createNetworkSettings() {
+        VBox networkSection = new VBox(12);
+        networkSection.getStyleClass().add("grok-surface");
+        networkSection.setPadding(new Insets(16));
 
-        gbc.gridy = 1;
-        add(connectNetworkRadio, gbc);
+        Text sectionTitle = new Text("Network Status");
+        sectionTitle.getStyleClass().add("grok-subtitle");
 
-        // Host network configuration
-        gbc.gridwidth = 1;
-        gbc.gridy = 2; gbc.gridx = 0;
-        add(new JLabel("SSID:"), gbc);
-        gbc.gridx = 1;
-        add(hostSSIDField, gbc);
+        networkStatusLabel = new Label("Checking network status...");
+        networkStatusLabel.getStyleClass().add("network-status");
 
-        gbc.gridy = 3; gbc.gridx = 0;
-        add(new JLabel("Password:"), gbc);
-        gbc.gridx = 1;
-        add(hostPasswordField, gbc);
+        Label expectedNetworkLabel = new Label("Expected Network: " + NetworkManager.EXPECTED_WIFI_NETWORK);
+        expectedNetworkLabel.getStyleClass().add("grok-body");
 
-        // Connect to network configuration
-        gbc.gridy = 4; gbc.gridx = 0;
-        add(new JLabel("Network:"), gbc);
-        gbc.gridx = 1;
-        JPanel networkSelectPanel = new JPanel(new BorderLayout());
-        networkSelectPanel.add(availableNetworksCombo, BorderLayout.CENTER);
-        networkSelectPanel.add(refreshNetworksButton, BorderLayout.EAST);
-        add(networkSelectPanel, gbc);
+        Label portLabel = new Label("ESP32 Communication Port: " + NetworkManager.ESP32_UDP_PORT);
+        portLabel.getStyleClass().add("grok-caption");
+        portLabel.setStyle("-fx-font-family: 'JetBrains Mono', 'Consolas', monospace;");
 
-        gbc.gridy = 5; gbc.gridx = 0;
-        add(new JLabel("Password:"), gbc);
-        gbc.gridx = 1;
-        add(connectPasswordField, gbc);
+        Label infoLabel = new Label("ESP32 robots expect to connect to '" + NetworkManager.EXPECTED_WIFI_NETWORK + "' network. Make sure you're connected to the same network.");
+        infoLabel.getStyleClass().addAll("grok-body", "info-surface");
+        infoLabel.setWrapText(true);
+        infoLabel.setPadding(new Insets(12));
 
-        // Control buttons
-        gbc.gridy = 6; gbc.gridx = 0; gbc.gridwidth = 2;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        add(startStopButton, gbc);
+        networkSection.getChildren().addAll(sectionTitle, networkStatusLabel, expectedNetworkLabel, portLabel, infoLabel);
+        root.getChildren().add(networkSection);
+    }
 
-        // Status and monitoring section
-        gbc.gridy = 7;
-        add(statusLabel, gbc);
+    private void createRobotConnection() {
+        VBox connectionSection = new VBox(16);
+        connectionSection.getStyleClass().add("grok-surface");
+        connectionSection.setPadding(new Insets(16));
 
-        // Signal strength
-        gbc.gridy = 8;
-        add(new JLabel("Signal Strength:"), gbc);
-        gbc.gridy = 9;
-        add(signalStrengthBar, gbc);
+        Text sectionTitle = new Text("Direct Robot Connection");
+        sectionTitle.getStyleClass().add("grok-subtitle");
 
-        // Connection details
-        gbc.gridy = 10;
-        add(connectionDetailsLabel, gbc);
+        VBox ipRow = new VBox(8);
 
-        // Network traffic graph
-        gbc.gridy = 11; gbc.gridwidth = 2;
-        gbc.fill = GridBagConstraints.BOTH; gbc.weighty = 1.0;
-        add(trafficGraph, gbc);
+        Label ipLabel = new Label("Robot IP Address");
+        ipLabel.getStyleClass().add("grok-body");
+
+        robotIpField = new TextField();
+        robotIpField.setPromptText("192.168.1.100");
+        robotIpField.getStyleClass().add("grok-text-field");
+        robotIpField.setPrefWidth(200);
+
+        ipRow.getChildren().addAll(ipLabel, robotIpField);
+
+        HBox buttonRow = new HBox(12);
+        buttonRow.setAlignment(Pos.CENTER_LEFT);
+        buttonRow.setPadding(new Insets(8, 0, 0, 0));
+
+        connectButton = new Button("Connect");
+        connectButton.getStyleClass().addAll("grok-button", "success");
+        connectButton.setOnAction(e -> connectToRobot());
+
+        disconnectButton = new Button("Disconnect");
+        disconnectButton.getStyleClass().addAll("grok-button", "danger");
+        disconnectButton.setOnAction(e -> disconnectFromRobot());
+        disconnectButton.setDisable(true);
+
+        buttonRow.getChildren().addAll(connectButton, disconnectButton);
+
+        connectionSection.getChildren().addAll(sectionTitle, ipRow, buttonRow);
+        root.getChildren().add(connectionSection);
     }
 
     private void setupEventHandlers() {
-        hostNetworkRadio.addActionListener(e -> updateUIElements());
-        connectNetworkRadio.addActionListener(e -> updateUIElements());
-
-        startStopButton.addActionListener(this::handleStartStopAction);
-        refreshNetworksButton.addActionListener(e -> refreshAvailableNetworks());
-
-        // Initial network scan
-        SwingUtilities.invokeLater(this::refreshAvailableNetworks);
-
-        // Status update timer
-        Timer statusTimer = new Timer(2000, e -> updateNetworkStatus());
-        statusTimer.start();
-
-        // Network statistics timer
-        networkStatsTimer = new Timer(1000, e -> updateNetworkStats());
-        networkStatsTimer.start();
+        // Event handlers are set up in createGUI methods
     }
 
-    private void updateUIElements() {
-        boolean hostMode = hostNetworkRadio.isSelected();
-
-        hostSSIDField.setEnabled(hostMode);
-        hostPasswordField.setEnabled(hostMode);
-
-        availableNetworksCombo.setEnabled(!hostMode);
-        connectPasswordField.setEnabled(!hostMode);
-        refreshNetworksButton.setEnabled(!hostMode);
-
-        updateStartStopButton();
-    }
-
-    private void updateStartStopButton() {
-        if (networkManager.isNetworkActive()) {
-            startStopButton.setText("Stop Network");
-            startStopButton.setBackground(new Color(255, 200, 200));
-        } else {
-            startStopButton.setText("Start Network");
-            startStopButton.setBackground(new Color(200, 255, 200));
+    private void connectToRobot() {
+        String ip = robotIpField.getText().trim();
+        if (ip.isEmpty()) {
+            showAlert("Error", "Please enter a robot IP address", Alert.AlertType.ERROR);
+            return;
         }
-    }
 
-    private void handleStartStopAction(ActionEvent e) {
-        if (networkManager.isNetworkActive()) {
-            stopNetwork();
-        } else {
-            startNetwork();
-        }
-    }
+        connectButton.setDisable(true);
+        connectButton.setText("Connecting...");
 
-    private void startNetwork() {
-        startStopButton.setEnabled(false);
-        startStopButton.setText("Starting...");
-
-        SwingUtilities.invokeLater(() -> {
-            boolean success = false;
-
+        // Simulate connection attempt
+        Platform.runLater(() -> {
             try {
-                if (hostNetworkRadio.isSelected()) {
-                    String ssid = hostSSIDField.getText().trim();
-                    String password = new String(hostPasswordField.getPassword());
+                // Here you would implement actual connection logic
+                logger.info("Attempting to connect to robot at IP: {}", ip);
 
-                    if (ssid.isEmpty() || password.length() < 8) {
-                        JOptionPane.showMessageDialog(this,
-                            "SSID cannot be empty and password must be at least 8 characters long.",
-                            "Invalid Configuration", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
+                // For now, just simulate success
+                showAlert("Success", "Connected to robot at " + ip, Alert.AlertType.INFORMATION);
 
-                    success = networkManager.startHostedNetwork(ssid, password);
-                } else {
-                    String selectedNetwork = (String) availableNetworksCombo.getSelectedItem();
-                    String password = new String(connectPasswordField.getPassword());
+                connectButton.setDisable(false);
+                connectButton.setText("Connect to Robot");
+                disconnectButton.setDisable(false);
 
-                    if (selectedNetwork == null || selectedNetwork.isEmpty()) {
-                        JOptionPane.showMessageDialog(this,
-                            "Please select a network to connect to.",
-                            "No Network Selected", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-
-                    success = networkManager.connectToNetwork(selectedNetwork, password);
-                }
-
-                if (success) {
-                    logger.info("Network operation successful");
-                } else {
-                    JOptionPane.showMessageDialog(this,
-                        "Failed to start/connect to network. Check your configuration and try again.",
-                        "Network Error", JOptionPane.ERROR_MESSAGE);
-                }
-
-            } catch (Exception ex) {
-                logger.error("Network operation failed", ex);
-                JOptionPane.showMessageDialog(this,
-                    "Network operation failed: " + ex.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
-            } finally {
-                startStopButton.setEnabled(true);
-                updateStartStopButton();
-                updateNetworkStatus();
+            } catch (Exception e) {
+                logger.error("Failed to connect to robot", e);
+                showAlert("Connection Error", "Failed to connect to robot: " + e.getMessage(), Alert.AlertType.ERROR);
+                connectButton.setDisable(false);
+                connectButton.setText("Connect to Robot");
             }
         });
     }
 
-    private void stopNetwork() {
-        startStopButton.setEnabled(false);
-        startStopButton.setText("Stopping...");
+    private void disconnectFromRobot() {
+        // Implement disconnection logic
+        logger.info("Disconnecting from robot");
 
-        SwingUtilities.invokeLater(() -> {
-            try {
-                if (networkManager.isHostingNetwork()) {
-                    networkManager.stopHostedNetwork();
-                }
-                logger.info("Network stopped");
-            } catch (Exception ex) {
-                logger.error("Failed to stop network", ex);
-            } finally {
-                startStopButton.setEnabled(true);
-                updateStartStopButton();
-                updateNetworkStatus();
-            }
-        });
-    }
+        connectButton.setDisable(false);
+        disconnectButton.setDisable(true);
 
-    private void refreshAvailableNetworks() {
-        refreshNetworksButton.setEnabled(false);
-        refreshNetworksButton.setText("Scanning...");
-
-        SwingWorker<List<String>, Void> worker = new SwingWorker<List<String>, Void>() {
-            @Override
-            protected List<String> doInBackground() {
-                return networkManager.scanAvailableNetworks();
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    List<String> networks = get();
-                    availableNetworksCombo.removeAllItems();
-                    for (String network : networks) {
-                        availableNetworksCombo.addItem(network);
-                    }
-                    if (!networks.isEmpty()) {
-                        availableNetworksCombo.setSelectedIndex(0);
-                    }
-                    logger.info("Refreshed network list: {} networks found", networks.size());
-                } catch (Exception e) {
-                    logger.error("Failed to refresh networks", e);
-                } finally {
-                    refreshNetworksButton.setEnabled(true);
-                    refreshNetworksButton.setText("Refresh");
-                }
-            }
-        };
-
-        worker.execute();
+        showAlert("Disconnected", "Disconnected from robot", Alert.AlertType.INFORMATION);
     }
 
     private void updateNetworkStatus() {
-        if (networkManager.isNetworkActive()) {
-            String status = "Network: Connected";
-            if (networkManager.isHostingNetwork()) {
-                status += " (Hosting)";
-                updateConnectionDetails("Host Mode", "100%", "N/A");
-                signalStrengthBar.setValue(100);
-                signalStrengthBar.setString("Signal: 100% (Host)");
+        Platform.runLater(() -> {
+            boolean isActive = networkManager.isNetworkActive();
+            networkStatusLabel.setText(isActive ? "✓ Connected" : "⚠ Disconnected");
+            networkStatusLabel.getStyleClass().add("grok-body");
+
+            if (isActive) {
+                networkStatusLabel.getStyleClass().removeAll("status-disconnected");
+                networkStatusLabel.getStyleClass().add("status-connected");
+                networkStatusLabel.setStyle("-fx-text-fill: -success-green;");
             } else {
-                status += " (" + networkManager.getCurrentSSID() + ")";
-                // Simulate signal strength and connection info
-                int signalStrength = 75 + (int)(Math.random() * 25); // 75-100%
-                updateConnectionDetails(getLocalIPAddress(), signalStrength + "%", "54 Mbps");
-                signalStrengthBar.setValue(signalStrength);
-                signalStrengthBar.setString("Signal: " + signalStrength + "%");
+                networkStatusLabel.getStyleClass().removeAll("status-connected");
+                networkStatusLabel.getStyleClass().add("status-disconnected");
+                networkStatusLabel.setStyle("-fx-text-fill: -error-red;");
             }
-            statusLabel.setText(status);
-            statusLabel.setForeground(new Color(60, 200, 100));
-        } else {
-            statusLabel.setText("Network: Disconnected");
-            statusLabel.setForeground(new Color(255, 100, 120));
-            updateConnectionDetails("N/A", "N/A", "N/A");
-            signalStrengthBar.setValue(0);
-            signalStrengthBar.setString("Signal: 0%");
-        }
-
-        updateStartStopButton();
+        });
     }
 
-    private void updateConnectionDetails(String ip, String signal, String speed) {
-        connectionDetailsLabel.setText("<html>IP: " + ip + "<br>Signal: " + signal + "<br>Speed: " + speed + "</html>");
+    private void startStatusUpdater() {
+        javafx.animation.Timeline timeline = new javafx.animation.Timeline(
+            new javafx.animation.KeyFrame(javafx.util.Duration.seconds(2), e -> updateNetworkStatus())
+        );
+        timeline.setCycleCount(javafx.animation.Timeline.INDEFINITE);
+        timeline.play();
     }
 
-    private String getLocalIPAddress() {
-        try {
-            return java.net.InetAddress.getLocalHost().getHostAddress();
-        } catch (Exception e) {
-            return "Unknown";
-        }
+    private void showAlert(String title, String message, Alert.AlertType type) {
+        Platform.runLater(() -> {
+            Alert alert = new Alert(type);
+            alert.setTitle(title);
+            alert.setHeaderText(null);
+            alert.setContentText(message);
+            alert.showAndWait();
+        });
     }
 
-    private void updateNetworkStats() {
-        if (networkManager.isNetworkActive()) {
-            // Simulate network traffic data
-            double sent = Math.random() * 1024; // Random bytes
-            double received = Math.random() * 2048;
-            trafficGraph.addDataPoint(sent, received);
-        }
-    }
-
-    @Override
-    public void removeNotify() {
-        if (networkStatsTimer != null) {
-            networkStatsTimer.stop();
-        }
-        super.removeNotify();
+    public Parent getRoot() {
+        return root;
     }
 }

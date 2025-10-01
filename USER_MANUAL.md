@@ -1,48 +1,76 @@
-# SoccerBots Robotics Control System - User Manual
+# SoccerBots Control Station - User Manual
 
-## Table of Contents
-1. [Overview](#overview)
-2. [Getting Started](#getting-started)
-3. [Network Management](#network-management)
-4. [Robot Management](#robot-management)
-5. [Controller Management](#controller-management)
-6. [System Status](#system-status)
-7. [Advanced Features](#advanced-features)
-8. [Troubleshooting](#troubleshooting)
-9. [Best Practices](#best-practices)
+Welcome to the SoccerBots Control Station, featuring a modern Grok AI-inspired JavaFX interface for controlling ESP32-based soccer robots with professional dark-mode aesthetics and real-time controller input.
 
-## Overview
+## 📖 Table of Contents
+1. [Overview](#-overview)
+2. [Getting Started](#-getting-started)
+3. [Grok Interface Guide](#-grok-interface-guide)
+4. [Robot Management](#-robot-management)
+5. [Controller Management](#-controller-management)
+6. [Network Configuration](#-network-configuration)
+7. [System Monitoring](#-system-monitoring)
+8. [Advanced Features](#-advanced-features)
+9. [Troubleshooting](#-troubleshooting)
+10. [Best Practices](#-best-practices)
 
-The SoccerBots Robotics Control System is a low-latency control solution for ESP32-based soccer robots. The system consists of:
+## 🚀 Overview
 
-- **Host Application**: Java GUI for managing networks, robots, and controllers
-- **Robot Firmware**: ESP32 Arduino code for receiving and executing commands
-- **Communication Protocol**: UDP-based networking with Bluetooth configuration
+The SoccerBots Control Station is a modern JavaFX application with Grok AI-inspired design for ESP32 robot control. The system features:
 
-### Key Features
-- **WiFi Network Management**: Host your own network or connect to existing networks
-- **Robot Discovery**: Automatic detection of robots on the network
-- **Controller Support**: USB game controller input with customizable mappings
-- **Bluetooth Configuration**: Configure robot WiFi settings via Bluetooth
-- **Real-time Status**: Live monitoring of connections and system health
-- **Low Latency**: Optimized for responsive robot control
+### 🎨 Modern Interface
+- **Grok AI-Inspired Theme**: Dark-mode interface with cosmic aesthetics
+- **Smooth Animations**: 150-200ms transitions with subtle scaling effects
+- **Professional Typography**: Inter font family with optimized readability
+- **Responsive Design**: Adapts to different screen sizes
+- **High Accessibility**: Strong contrast ratios and clear visual hierarchy
 
-## Getting Started
+### 🤖 ESP32 Integration
+- **WATCHTOWER Network**: Dedicated network for ESP32 communication
+- **Binary UDP Protocol**: High-performance 24-byte command packets
+- **Manual Robot Addition**: Direct IP-based robot connections
+- **Real-time Controller Mapping**: Direct stick-to-robot input translation
+- **Game State Management**: Teleop/standby mode control
 
-### 1. Launch the Application
-- Run the Java application (see Installation Guide)
-- The main window will open with four panels:
-  - **Network Configuration** (top-left)
-  - **Controller Management** (bottom-left)
-  - **Robot Management** (center)
-  - **Status Bar** (bottom)
+### 🎮 Controller Features
+- **Auto-Detection**: USB controllers appear automatically
+- **Multi-Controller Support**: Xbox, PlayStation, generic gamepads
+- **Real-time Input**: 60Hz controller polling with live visualization
+- **Emergency Stop**: Immediate safety control for all robots
 
-### 2. Quick Setup
-1. **Configure Network**: Choose to host your own network or connect to existing
-2. **Discover Robots**: Click "Discover Robots" to find available robots
-3. **Connect Controllers**: Plug in USB controllers
-4. **Pair Devices**: Pair controllers with discovered robots
-5. **Start Controlling**: Use controller inputs to control paired robots
+## 🚀 Getting Started
+
+### Prerequisites
+- **Java 17+** with JavaFX support
+- **WATCHTOWER WiFi network** access
+- **ESP32 robots** pre-configured for WATCHTOWER
+- **USB controllers** (Xbox, PlayStation, or compatible)
+
+### First Launch
+1. **Connect to WATCHTOWER Network**
+   ```
+   Connect your computer to the WATCHTOWER WiFi network
+   Verify strong signal strength
+   ```
+
+2. **Launch Control Station**
+   ```bash
+   java -jar robotics-control-system-1.0.0-jar-with-dependencies.jar
+   ```
+
+3. **Interface Overview**
+   - Grok-inspired dark interface loads
+   - Navigation pills in header bar
+   - Robots panel shown by default
+   - Status bar displays connection info
+
+### Quick Setup Process
+1. **Verify Network**: Check WATCHTOWER connection in Network panel
+2. **Add Robots**: Use "Add Robot" button with name and IP
+3. **Connect Controllers**: Plug in USB controllers (auto-detected)
+4. **Pair Devices**: Assign controllers to specific robots
+5. **Enable Teleop**: Start teleop mode for robot control
+6. **Begin Operation**: Use controllers to drive robots
 
 ## Network Management
 

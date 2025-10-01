@@ -8,8 +8,8 @@ import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RoboticsControlApp extends Application {
-    private static final Logger logger = LoggerFactory.getLogger(RoboticsControlApp.class);
+public class RoboticsControlFXApp extends Application {
+    private static final Logger logger = LoggerFactory.getLogger(RoboticsControlFXApp.class);
 
     public static void main(String[] args) {
         logger.info("Starting SoccerBots Robotics Control System (JavaFX)");
@@ -26,8 +26,8 @@ public class RoboticsControlApp extends Application {
             MainWindow mainWindow = new MainWindow();
             Scene scene = new Scene(mainWindow.getRoot(), 1400, 900);
 
-            // Load custom CSS
-            scene.getStylesheets().add(getClass().getResource("/styles/main.css").toExternalForm());
+            // Load Grok-inspired CSS theme
+            scene.getStylesheets().add(getClass().getResource("/styles/grok.css").toExternalForm());
 
             primaryStage.setScene(scene);
             primaryStage.setOnCloseRequest(e -> {

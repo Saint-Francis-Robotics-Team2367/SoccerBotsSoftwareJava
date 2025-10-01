@@ -1,0 +1,506 @@
+/* Grok AI-Inspired Theme for SoccerBots Control System */
+
+/* CSS Variables for Theme Colors */
+.root {
+    /* Primary Colors */
+    -primary-bg: #0A0A0A;
+    -secondary-bg: #1A1A1A;
+    -tertiary-bg: #333333;
+    -surface-bg: #2A2F36;
+
+    /* Text Colors */
+    -primary-text: #FFFFFF;
+    -secondary-text: #EDEDED;
+    -muted-text: #9CA3AF;
+    -placeholder-text: #6B7280;
+
+    /* Accent Colors */
+    -accent-blue: #1D9BF0;
+    -accent-blue-hover: #1A8CD8;
+    -success-green: #22C55E;
+    -warning-yellow: #EAB308;
+    -error-red: #EF4444;
+
+    /* Border Colors */
+    -border-primary: #2A2F36;
+    -border-secondary: #374151;
+    -border-focus: #1D9BF0;
+
+    /* Shadows */
+    -shadow-small: 0 1px 3px rgba(0, 0, 0, 0.4);
+    -shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.3);
+    -shadow-large: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+    /* Typography */
+    -font-family: "Inter", "SF Pro Display", "Roboto", system-ui, sans-serif;
+    -font-size-small: 12px;
+    -font-size-body: 14px;
+    -font-size-label: 16px;
+    -font-size-title: 24px;
+    -font-size-header: 32px;
+
+    /* Spacing */
+    -spacing-xs: 4px;
+    -spacing-sm: 8px;
+    -spacing-md: 16px;
+    -spacing-lg: 24px;
+    -spacing-xl: 32px;
+
+    /* Border Radius */
+    -radius-sm: 6px;
+    -radius-md: 8px;
+    -radius-lg: 12px;
+    -radius-xl: 16px;
+    -radius-pill: 9999px;
+}
+
+/* Global Styles */
+.root {
+    -fx-background-color: -primary-bg;
+    -fx-font-family: -font-family;
+    -fx-font-size: -font-size-body;
+    -fx-text-fill: -primary-text;
+    -fx-font-smoothing-type: lcd;
+}
+
+/* Main Window */
+.main-window {
+    -fx-background-color: -primary-bg;
+    -fx-padding: 0;
+}
+
+/* Header/Navigation */
+.header-bar {
+    -fx-background-color: -secondary-bg;
+    -fx-border-color: -border-primary;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: -spacing-md -spacing-lg;
+    -fx-spacing: -spacing-lg;
+    -fx-alignment: center-left;
+}
+
+.logo-text {
+    -fx-font-size: -font-size-title;
+    -fx-font-weight: 600;
+    -fx-text-fill: -primary-text;
+    -fx-letter-spacing: -0.06em;
+}
+
+.nav-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: -muted-text;
+    -fx-font-size: -font-size-body;
+    -fx-font-weight: 500;
+    -fx-padding: -spacing-sm -spacing-md;
+    -fx-background-radius: -radius-md;
+    -fx-border-radius: -radius-md;
+    -fx-cursor: hand;
+    -fx-effect: null;
+}
+
+.nav-button:hover {
+    -fx-background-color: -tertiary-bg;
+    -fx-text-fill: -primary-text;
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
+.nav-button.active {
+    -fx-background-color: -accent-blue;
+    -fx-text-fill: -primary-text;
+    -fx-font-weight: 600;
+}
+
+/* Content Area */
+.content-area {
+    -fx-background-color: -primary-bg;
+    -fx-padding: -spacing-lg;
+}
+
+/* Cards and Panels */
+.grok-card {
+    -fx-background-color: -secondary-bg;
+    -fx-background-radius: -radius-lg;
+    -fx-border-color: -border-primary;
+    -fx-border-width: 1;
+    -fx-border-radius: -radius-lg;
+    -fx-padding: -spacing-lg;
+    -fx-effect: -shadow-small;
+}
+
+.grok-card:hover {
+    -fx-effect: -shadow-medium;
+    -fx-scale-x: 1.005;
+    -fx-scale-y: 1.005;
+}
+
+.grok-surface {
+    -fx-background-color: -surface-bg;
+    -fx-background-radius: -radius-md;
+    -fx-border-color: -border-secondary;
+    -fx-border-width: 1;
+    -fx-border-radius: -radius-md;
+    -fx-padding: -spacing-md;
+}
+
+/* Typography */
+.grok-title {
+    -fx-font-size: -font-size-title;
+    -fx-font-weight: 600;
+    -fx-text-fill: -primary-text;
+    -fx-letter-spacing: -0.06em;
+}
+
+.grok-subtitle {
+    -fx-font-size: -font-size-label;
+    -fx-font-weight: 500;
+    -fx-text-fill: -secondary-text;
+    -fx-letter-spacing: -0.04em;
+}
+
+.grok-body {
+    -fx-font-size: -font-size-body;
+    -fx-font-weight: 400;
+    -fx-text-fill: -secondary-text;
+    -fx-line-spacing: 0.5em;
+}
+
+.grok-caption {
+    -fx-font-size: -font-size-small;
+    -fx-font-weight: 400;
+    -fx-text-fill: -muted-text;
+}
+
+/* Buttons */
+.grok-button {
+    -fx-background-color: -accent-blue;
+    -fx-text-fill: -primary-text;
+    -fx-font-size: -font-size-body;
+    -fx-font-weight: 500;
+    -fx-padding: -spacing-sm -spacing-md;
+    -fx-background-radius: -radius-pill;
+    -fx-border-radius: -radius-pill;
+    -fx-border-width: 0;
+    -fx-cursor: hand;
+    -fx-effect: -shadow-small;
+}
+
+.grok-button:hover {
+    -fx-background-color: -accent-blue-hover;
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+    -fx-effect: dropshadow(gaussian, derive(-accent-blue, -20%), 8, 0.3, 0, 2);
+}
+
+.grok-button:pressed {
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+}
+
+.grok-button.success {
+    -fx-background-color: -success-green;
+}
+
+.grok-button.success:hover {
+    -fx-background-color: derive(-success-green, -10%);
+    -fx-effect: dropshadow(gaussian, derive(-success-green, -20%), 8, 0.3, 0, 2);
+}
+
+.grok-button.warning {
+    -fx-background-color: -warning-yellow;
+    -fx-text-fill: -primary-bg;
+}
+
+.grok-button.warning:hover {
+    -fx-background-color: derive(-warning-yellow, -10%);
+    -fx-effect: dropshadow(gaussian, derive(-warning-yellow, -20%), 8, 0.3, 0, 2);
+}
+
+.grok-button.danger {
+    -fx-background-color: -error-red;
+}
+
+.grok-button.danger:hover {
+    -fx-background-color: derive(-error-red, -10%);
+    -fx-effect: dropshadow(gaussian, derive(-error-red, -20%), 8, 0.3, 0, 2);
+}
+
+.grok-button.secondary {
+    -fx-background-color: -tertiary-bg;
+    -fx-text-fill: -primary-text;
+    -fx-border-color: -border-secondary;
+    -fx-border-width: 1;
+}
+
+.grok-button.secondary:hover {
+    -fx-background-color: derive(-tertiary-bg, 10%);
+    -fx-border-color: -border-focus;
+}
+
+.grok-button.ghost {
+    -fx-background-color: transparent;
+    -fx-text-fill: -muted-text;
+    -fx-border-color: -border-secondary;
+    -fx-border-width: 1;
+}
+
+.grok-button.ghost:hover {
+    -fx-background-color: -tertiary-bg;
+    -fx-text-fill: -primary-text;
+    -fx-border-color: -border-focus;
+}
+
+/* Input Fields */
+.grok-text-field {
+    -fx-background-color: -surface-bg;
+    -fx-text-fill: -primary-text;
+    -fx-prompt-text-fill: -placeholder-text;
+    -fx-font-size: -font-size-body;
+    -fx-padding: -spacing-sm -spacing-md;
+    -fx-background-radius: -radius-md;
+    -fx-border-color: -border-secondary;
+    -fx-border-width: 1;
+    -fx-border-radius: -radius-md;
+}
+
+.grok-text-field:focused {
+    -fx-border-color: -border-focus;
+    -fx-effect: dropshadow(gaussian, derive(-accent-blue, -30%), 4, 0.2, 0, 0);
+}
+
+/* Status Indicators */
+.status-indicator {
+    -fx-stroke-width: 0;
+    -fx-effect: dropshadow(gaussian, derive(-fx-fill, -30%), 4, 0.3, 0, 0);
+}
+
+.status-connected {
+    -fx-fill: -success-green;
+}
+
+.status-disconnected {
+    -fx-fill: -error-red;
+}
+
+.status-warning {
+    -fx-fill: -warning-yellow;
+}
+
+/* Robot Cards */
+.robot-card {
+    -fx-background-color: -secondary-bg;
+    -fx-background-radius: -radius-lg;
+    -fx-border-color: -border-primary;
+    -fx-border-width: 1;
+    -fx-border-radius: -radius-lg;
+    -fx-padding: -spacing-md;
+    -fx-spacing: -spacing-sm;
+    -fx-effect: -shadow-small;
+    -fx-min-width: 280px;
+    -fx-max-width: 320px;
+}
+
+.robot-card:hover {
+    -fx-effect: -shadow-medium;
+    -fx-scale-x: 1.02;
+    -fx-scale-y: 1.02;
+}
+
+.robot-card.connected {
+    -fx-border-color: -success-green;
+    -fx-effect: dropshadow(gaussian, derive(-success-green, -50%), 8, 0.2, 0, 0);
+}
+
+.robot-card.disconnected {
+    -fx-border-color: -border-primary;
+    -fx-opacity: 0.8;
+}
+
+.robot-name {
+    -fx-font-size: -font-size-label;
+    -fx-font-weight: 600;
+    -fx-text-fill: -primary-text;
+}
+
+.robot-ip {
+    -fx-font-size: -font-size-small;
+    -fx-font-weight: 400;
+    -fx-text-fill: -muted-text;
+    -fx-font-family: "JetBrains Mono", "Consolas", monospace;
+}
+
+.robot-status {
+    -fx-font-size: -font-size-small;
+    -fx-font-weight: 500;
+    -fx-text-fill: -secondary-text;
+}
+
+.robot-last-seen {
+    -fx-font-size: -font-size-small;
+    -fx-font-weight: 400;
+    -fx-text-fill: -muted-text;
+}
+
+/* Network Status */
+.network-status {
+    -fx-font-weight: 500;
+    -fx-font-size: -font-size-body;
+}
+
+.network-status.connected {
+    -fx-text-fill: -success-green;
+}
+
+.network-status.disconnected {
+    -fx-text-fill: -error-red;
+}
+
+/* Controller Cards */
+.controller-card {
+    -fx-background-color: -secondary-bg;
+    -fx-background-radius: -radius-lg;
+    -fx-border-color: -border-primary;
+    -fx-border-width: 1;
+    -fx-border-radius: -radius-lg;
+    -fx-padding: -spacing-md;
+    -fx-spacing: -spacing-sm;
+    -fx-effect: -shadow-small;
+}
+
+.controller-card.paired {
+    -fx-border-color: -accent-blue;
+    -fx-effect: dropshadow(gaussian, derive(-accent-blue, -50%), 8, 0.2, 0, 0);
+}
+
+/* ScrollPanes */
+.grok-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+.grok-scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+.grok-scroll-pane .scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.grok-scroll-pane .scroll-bar .track {
+    -fx-background-color: -tertiary-bg;
+    -fx-background-radius: -radius-sm;
+}
+
+.grok-scroll-pane .scroll-bar .thumb {
+    -fx-background-color: -muted-text;
+    -fx-background-radius: -radius-sm;
+}
+
+.grok-scroll-pane .scroll-bar .thumb:hover {
+    -fx-background-color: -secondary-text;
+}
+
+/* Dialogs */
+.dialog-pane {
+    -fx-background-color: -secondary-bg;
+    -fx-border-color: -border-secondary;
+    -fx-border-width: 1;
+    -fx-background-radius: -radius-lg;
+    -fx-border-radius: -radius-lg;
+    -fx-effect: -shadow-large;
+}
+
+.dialog-pane .header-panel {
+    -fx-background-color: -surface-bg;
+    -fx-background-radius: -radius-lg -radius-lg 0 0;
+    -fx-border-radius: -radius-lg -radius-lg 0 0;
+}
+
+.dialog-pane .header-panel .label {
+    -fx-font-size: -font-size-title;
+    -fx-font-weight: 600;
+    -fx-text-fill: -primary-text;
+}
+
+.dialog-pane .content {
+    -fx-background-color: -secondary-bg;
+    -fx-padding: -spacing-lg;
+}
+
+.dialog-pane .button-bar {
+    -fx-background-color: -surface-bg;
+    -fx-background-radius: 0 0 -radius-lg -radius-lg;
+    -fx-border-radius: 0 0 -radius-lg -radius-lg;
+    -fx-padding: -spacing-md -spacing-lg;
+}
+
+/* FlowPane Containers */
+.grok-flow-pane {
+    -fx-background-color: transparent;
+    -fx-hgap: -spacing-md;
+    -fx-vgap: -spacing-md;
+    -fx-padding: -spacing-sm;
+}
+
+/* Info/Alert Styles */
+.info-surface {
+    -fx-background-color: derive(-accent-blue, 90%);
+    -fx-border-color: -accent-blue;
+    -fx-border-width: 1;
+    -fx-border-radius: -radius-md;
+    -fx-background-radius: -radius-md;
+    -fx-padding: -spacing-md;
+}
+
+.success-surface {
+    -fx-background-color: derive(-success-green, 90%);
+    -fx-border-color: -success-green;
+    -fx-border-width: 1;
+    -fx-border-radius: -radius-md;
+    -fx-background-radius: -radius-md;
+    -fx-padding: -spacing-md;
+}
+
+.warning-surface {
+    -fx-background-color: derive(-warning-yellow, 90%);
+    -fx-border-color: -warning-yellow;
+    -fx-border-width: 1;
+    -fx-border-radius: -radius-md;
+    -fx-background-radius: -radius-md;
+    -fx-padding: -spacing-md;
+}
+
+.error-surface {
+    -fx-background-color: derive(-error-red, 90%);
+    -fx-border-color: -error-red;
+    -fx-border-width: 1;
+    -fx-border-radius: -radius-md;
+    -fx-background-radius: -radius-md;
+    -fx-padding: -spacing-md;
+}
+
+/* Animations */
+.fade-in {
+    -fx-opacity: 0;
+}
+
+.scale-in {
+    -fx-scale-x: 0.95;
+    -fx-scale-y: 0.95;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+    .robot-card {
+        -fx-min-width: 240px;
+        -fx-max-width: 280px;
+    }
+
+    .header-bar {
+        -fx-padding: -spacing-sm -spacing-md;
+    }
+
+    .content-area {
+        -fx-padding: -spacing-md;
+    }
+}

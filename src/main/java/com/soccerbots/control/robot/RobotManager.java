@@ -1,240 +1,249 @@
 package com.soccerbots.control.robot;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soccerbots.control.network.NetworkManager;
+import com.soccerbots.control.controller.ControllerInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.*;
 import java.util.concurrent.*;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RobotManager {
     private static final Logger logger = LoggerFactory.getLogger(RobotManager.class);
-    
-    private static final int DISCOVERY_PORT = 12345;
-    private static final int COMMAND_PORT = 12346;
-    private static final String DISCOVERY_MESSAGE = "SOCCERBOTS_DISCOVERY";
-    
+
     private final NetworkManager networkManager;
-    private final ObjectMapper objectMapper;
     private final Map<String, Robot> connectedRobots;
     private final ExecutorService executorService;
-    private final AtomicBoolean isDiscovering;
-    
-    private DatagramSocket discoverySocket;
-    private DatagramSocket commandSocket;
-    
+
+    // Game state management
+    private volatile String currentGameState = "standby";
+
     public RobotManager(NetworkManager networkManager) {
         this.networkManager = networkManager;
-        this.objectMapper = new ObjectMapper();
         this.connectedRobots = new ConcurrentHashMap<>();
         this.executorService = Executors.newCachedThreadPool();
-        this.isDiscovering = new AtomicBoolean(false);
-        
-        initializeSockets();
-        startDiscoveryListener();
+
+        logger.info("ESP32 Robot Manager initialized");
     }
-    
-    private void initializeSockets() {
-        try {
-            discoverySocket = networkManager.createUDPSocket(DISCOVERY_PORT);
-            commandSocket = networkManager.createUDPSocket(COMMAND_PORT);
-            logger.info("Initialized sockets on ports {} and {}", DISCOVERY_PORT, COMMAND_PORT);
-        } catch (SocketException e) {
-            logger.error("Failed to initialize sockets", e);
-        }
+
+    /**
+     * Add an ESP32 robot manually by IP address and name
+     */
+    public Robot addRobot(String robotName, String ipAddress) {
+        Robot robot = new Robot(robotName, robotName, ipAddress, "connected");
+        connectedRobots.put(robotName, robot);
+        logger.info("Added ESP32 robot: {} at {}", robotName, ipAddress);
+        return robot;
     }
-    
-    private void startDiscoveryListener() {
-        executorService.submit(() -> {
-            byte[] buffer = new byte[1024];
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                    discoverySocket.receive(packet);
-                    
-                    String message = new String(packet.getData(), 0, packet.getLength());
-                    String senderIP = packet.getAddress().getHostAddress();
-                    
-                    handleDiscoveryResponse(message, senderIP);
-                    
-                } catch (Exception e) {
-                    if (!Thread.currentThread().isInterrupted()) {
-                        logger.error("Error in discovery listener", e);
-                    }
-                }
-            }
-        });
-    }
-    
-    private void handleDiscoveryResponse(String message, String senderIP) {
-        try {
-            if (message.startsWith("SOCCERBOTS_ROBOT:")) {
-                String robotData = message.substring("SOCCERBOTS_ROBOT:".length());
-                RobotInfo robotInfo = objectMapper.readValue(robotData, RobotInfo.class);
-                
-                Robot robot = new Robot(robotInfo.getId(), robotInfo.getName(), senderIP, robotInfo.getStatus());
-                connectedRobots.put(robot.getId(), robot);
-                
-                logger.info("Discovered robot: {} at {}", robot.getName(), senderIP);
-                
-                sendRobotResponse(senderIP, "DISCOVERY_ACK");
-            }
-        } catch (Exception e) {
-            logger.error("Failed to handle discovery response", e);
-        }
-    }
-    
-    public void startDiscovery() {
-        if (isDiscovering.get()) {
-            return;
-        }
-        
-        isDiscovering.set(true);
-        logger.info("Starting robot discovery");
-        
-        executorService.submit(() -> {
-            try {
-                String broadcastAddress = getBroadcastAddress();
-                if (broadcastAddress != null) {
-                    
-                    for (int i = 0; i < 3; i++) {
-                        networkManager.sendUDPMessage(DISCOVERY_MESSAGE, broadcastAddress, DISCOVERY_PORT);
-                        Thread.sleep(1000);
-                    }
-                }
-            } catch (Exception e) {
-                logger.error("Error during discovery", e);
-            } finally {
-                isDiscovering.set(false);
-            }
-        });
-    }
-    
-    private String getBroadcastAddress() {
-        try {
-            for (NetworkInterface networkInterface : java.util.Collections.list(NetworkInterface.getNetworkInterfaces())) {
-                if (networkInterface.isLoopback() || !networkInterface.isUp()) {
-                    continue;
-                }
-                
-                for (InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses()) {
-                    InetAddress broadcast = interfaceAddress.getBroadcast();
-                    if (broadcast != null) {
-                        return broadcast.getHostAddress();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            logger.error("Failed to get broadcast address", e);
-        }
-        return "255.255.255.255";
-    }
-    
-    private void sendRobotResponse(String targetIP, String message) {
-        networkManager.sendUDPMessage(message, targetIP, DISCOVERY_PORT);
-    }
-    
-    public void sendCommand(String robotId, RobotCommand command) {
-        Robot robot = connectedRobots.get(robotId);
+
+    /**
+     * Send controller input to a specific ESP32 robot
+     */
+    public void sendControllerInput(String robotName, ControllerInput input) {
+        Robot robot = connectedRobots.get(robotName);
         if (robot == null) {
-            logger.warn("Robot not found: {}", robotId);
+            logger.warn("Robot not found: {}", robotName);
             return;
         }
-        
-        executorService.submit(() -> {
-            try {
-                String commandJson = objectMapper.writeValueAsString(command);
-                networkManager.sendUDPMessage(commandJson, robot.getIpAddress(), COMMAND_PORT);
-                robot.updateLastCommandTime();
-                
-                logger.debug("Sent command to robot {}: {}", robotId, command.getType());
-            } catch (Exception e) {
-                logger.error("Failed to send command to robot {}", robotId, e);
-            }
-        });
-    }
-    
-    public void sendMovementCommand(String robotId, double forward, double sideways, double rotation) {
-        RobotCommand command = new RobotCommand("MOVE");
-        command.addParameter("forward", forward);
-        command.addParameter("sideways", sideways);
-        command.addParameter("rotation", rotation);
-        command.addParameter("timestamp", System.currentTimeMillis());
-        
-        sendCommand(robotId, command);
-    }
-    
-    public void sendStopCommand(String robotId) {
-        RobotCommand command = new RobotCommand("STOP");
-        command.addParameter("timestamp", System.currentTimeMillis());
 
-        sendCommand(robotId, command);
+        // Convert controller input to ESP32 format
+        ESP32Command command = ESP32Command.fromControllerInput(
+            robotName,
+            input.getLeftStickX(), input.getLeftStickY(),
+            input.getRightStickX(), input.getRightStickY(),
+            input.getButton(0), input.getButton(1),
+            input.getButton(2), input.getButton(3)
+        );
+
+        sendESP32Command(robot, command);
     }
 
+    /**
+     * Send ESP32 command to robot
+     */
+    public void sendESP32Command(Robot robot, ESP32Command command) {
+        if (!"teleop".equals(currentGameState)) {
+            // Only send movement commands during teleop mode
+            command = ESP32Command.createStopCommand(command.getRobotName());
+        }
+
+        networkManager.sendRobotCommand(
+            command.getRobotName(),
+            robot.getIpAddress(),
+            command.getLeftX(),
+            command.getLeftY(),
+            command.getRightX(),
+            command.getRightY(),
+            command.isCross(),
+            command.isCircle(),
+            command.isSquare(),
+            command.isTriangle()
+        );
+
+        robot.updateLastCommandTime();
+    }
+
+    /**
+     * Send movement command to robot using normalized values
+     */
+    public void sendMovementCommand(String robotName, double leftStickX, double leftStickY,
+                                  double rightStickX, double rightStickY) {
+        Robot robot = connectedRobots.get(robotName);
+        if (robot == null) {
+            logger.warn("Robot not found: {}", robotName);
+            return;
+        }
+
+        ESP32Command command = ESP32Command.fromControllerInput(
+            robotName, leftStickX, leftStickY, rightStickX, rightStickY,
+            false, false, false, false // No buttons
+        );
+
+        sendESP32Command(robot, command);
+    }
+
+    /**
+     * Send stop command to specific robot
+     */
+    public void sendStopCommand(String robotName) {
+        Robot robot = connectedRobots.get(robotName);
+        if (robot == null) {
+            logger.warn("Robot not found: {}", robotName);
+            return;
+        }
+
+        ESP32Command stopCommand = ESP32Command.createStopCommand(robotName);
+        sendESP32Command(robot, stopCommand);
+    }
+
+    /**
+     * Emergency stop all robots
+     */
     public void emergencyStopAll() {
-        logger.warn("EMERGENCY STOP - Halting all robots");
+        logger.warn("EMERGENCY STOP - Halting all ESP32 robots");
+        setGameState("standby"); // This will stop all movement
         for (Robot robot : connectedRobots.values()) {
             sendStopCommand(robot.getId());
         }
     }
-    
-    public void configureRobotWiFi(String robotId, String ssid, String password) {
-        RobotCommand command = new RobotCommand("CONFIGURE_WIFI");
-        command.addParameter("ssid", ssid);
-        command.addParameter("password", password);
-        command.addParameter("timestamp", System.currentTimeMillis());
-        
-        sendCommand(robotId, command);
+
+    /**
+     * Set game state for all robots
+     */
+    public void setGameState(String gameState) {
+        this.currentGameState = gameState;
+        logger.info("Setting game state to: {}", gameState);
+
+        // Broadcast game state to all robots
+        for (Robot robot : connectedRobots.values()) {
+            networkManager.sendGameStatus(robot.getName(), robot.getIpAddress(), gameState);
+        }
     }
-    
+
+    /**
+     * Get current game state
+     */
+    public String getCurrentGameState() {
+        return currentGameState;
+    }
+
+    /**
+     * Start teleop mode (allow robot movement)
+     */
+    public void startTeleop() {
+        setGameState("teleop");
+    }
+
+    /**
+     * Stop teleop mode (disable robot movement)
+     */
+    public void stopTeleop() {
+        setGameState("standby");
+    }
+
+    /**
+     * Check if robots can move (teleop mode)
+     */
+    public boolean isInTeleopMode() {
+        return "teleop".equals(currentGameState);
+    }
+
     public List<Robot> getConnectedRobots() {
         return new ArrayList<>(connectedRobots.values());
     }
-    
+
     public int getConnectedRobotCount() {
         return connectedRobots.size();
     }
-    
-    public Robot getRobot(String robotId) {
-        return connectedRobots.get(robotId);
+
+    public Robot getRobot(String robotName) {
+        return connectedRobots.get(robotName);
     }
-    
-    public void removeRobot(String robotId) {
-        Robot removed = connectedRobots.remove(robotId);
+
+    public void removeRobot(String robotName) {
+        Robot removed = connectedRobots.remove(robotName);
         if (removed != null) {
-            logger.info("Removed robot: {}", removed.getName());
+            logger.info("Removed ESP32 robot: {}", removed.getName());
         }
     }
-    
+
+    /**
+     * Test connection to a robot by sending a ping
+     */
+    public void testRobotConnection(String robotName) {
+        Robot robot = connectedRobots.get(robotName);
+        if (robot != null) {
+            networkManager.sendGameStatus(robotName, robot.getIpAddress(), "ping");
+            logger.info("Testing connection to robot: {}", robotName);
+        }
+    }
+
+    /**
+     * Clear robots that haven't responded recently
+     */
     public void clearOfflineRobots() {
         long currentTime = System.currentTimeMillis();
-        long timeout = 30000; // 30 seconds
-        
+        long timeout = 60000; // 60 seconds for manual robots
+
         connectedRobots.entrySet().removeIf(entry -> {
             Robot robot = entry.getValue();
             boolean isOffline = (currentTime - robot.getLastSeenTime()) > timeout;
             if (isOffline) {
-                logger.info("Removing offline robot: {}", robot.getName());
+                logger.info("Removing offline ESP32 robot: {}", robot.getName());
             }
             return isOffline;
         });
     }
-    
+
+    /**
+     * Get network status for ESP32 communication
+     */
+    public boolean isNetworkReady() {
+        return networkManager.isNetworkActive();
+    }
+
+    /**
+     * Check if connected to expected ESP32 network
+     */
+    public boolean isConnectedToRobotNetwork() {
+        return networkManager.isConnectedToExpectedNetwork();
+    }
+
+    /**
+     * Get expected network name for ESP32 robots
+     */
+    public String getExpectedNetworkName() {
+        return networkManager.getExpectedNetwork();
+    }
+
     public void shutdown() {
-        logger.info("Shutting down robot manager");
-        
-        if (discoverySocket != null && !discoverySocket.isClosed()) {
-            discoverySocket.close();
-        }
-        if (commandSocket != null && !commandSocket.isClosed()) {
-            commandSocket.close();
-        }
-        
+        logger.info("Shutting down ESP32 robot manager");
+
+        // Stop all robots before shutdown
+        setGameState("standby");
+
         if (executorService != null) {
             executorService.shutdown();
             try {
@@ -245,28 +254,5 @@ public class RobotManager {
                 executorService.shutdownNow();
             }
         }
-    }
-    
-    public static class RobotInfo {
-        private String id;
-        private String name;
-        private String status;
-        
-        public RobotInfo() {}
-        
-        public RobotInfo(String id, String name, String status) {
-            this.id = id;
-            this.name = name;
-            this.status = status;
-        }
-        
-        public String getId() { return id; }
-        public void setId(String id) { this.id = id; }
-        
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-        
-        public String getStatus() { return status; }
-        public void setStatus(String status) { this.status = status; }
     }
 }
