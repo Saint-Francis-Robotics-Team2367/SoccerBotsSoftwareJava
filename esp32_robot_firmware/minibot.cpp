@@ -1,78 +1,90 @@
 #include "minibot.h"
 
+const int RIGHT_DC_CHANNEL = 16;
+const int RIGHT_DC_CHANNEL = 17;
+const int RIGHT_DC_CHANNEL = 18;
+const int RIGHT_DC_CHANNEL = 19;
+const int PWM_FREQ = 100;
+const int PWM_RESOLUTION = 16;
+
 // Constructor
-Minibot::Minibot(const char* robotId, 
-                 int leftMotorPin, int rightMotorPin,
-                 int dcMotorPin, int servoMotorPin)
-  : robotId(robotId),
-    leftPin(leftMotorPin), rightPin(rightMotorPin),
-    dcMotorPin(dcMotorPin), servoMotorPin(servoMotorPin),
-    leftX(125), leftY(130), rightX(127), rightY(130),
-    cross(false), circle(false), square(false), triangle(false),
-    gameStatus("standby") {
+Minibot::Minibot(const char* robotId,
+								 int leftMotorPin, int rightMotorPin,
+								 int dcMotorPin, int servoMotorPin)
+                  : robotId(robotId),
+                      leftPin(leftMotorPin), rightPin(rightMotorPin),
+                      dcMotorPin(dcMotorPin), servoMotorPin(servoMotorPin),
+                      leftX(127), leftY(127), rightX(127), rightY(127),
+                      cross(false), circle(false), square(false), triangle(false),
+                      gameStatus("standby")
+{
+	Serial.begin(115200);
+
+	//init PWM channels
+    ledcSetup(LEFT_PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
+    ledcSetup(RIGHT_PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
+  	ledcSetup(DC_PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
+    ledcSetup(SERVO_PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
+
+	ledcAttachPin(leftMotorPin, LEFT_PWM_CHANNEL);
+    ledcAttachPin(rightMotorPin, RIGHT_PWM_CHANNEL);
+    ledcAttachPin(dcMotorPin, DC_PWM_CHANNEL);
+    ledcAttachPin(servoMotorPin, SERVO_PWM_CHANNEL);
+
+	// Wi-Fi connection
+	WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+	Serial.print("Connecting to WiFi");
+	while (WiFi.status() != WL_CONNECTED)
+    {
+		delay(500);
+		Serial.print(".");
+	}
+	Serial.println("\nConnected! IP: " + WiFi.localIP().toString());
+
+	// Start UDP
+	udp.begin(UDP_PORT);
+	Serial.println("Listening on UDP port " + String(UDP_PORT));
 }
 
-// Public functions
 
-void Minibot::init() {
-  Serial.begin(115200);
-
-  pinMode(leftPin, OUTPUT);
-  pinMode(rightPin, OUTPUT);
-  pinMode(dcMotorPin, OUTPUT);
-  pinMode(servoMotorPin, OUTPUT);
-
-  // Wi-Fi connection
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  Serial.print("Connecting to WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nConnected! IP: " + WiFi.localIP().toString());
-
-  // Start UDP
-  udp.begin(UDP_PORT);
-  Serial.println("Listening on UDP port " + String(UDP_PORT));
-}
 
 void Minibot::updateController() {
-  int packetSize = udp.parsePacket();
-  if (packetSize) {
-    int len = udp.read(incomingPacket, 255);
-    if (len > 0) incomingPacket[len] = '\0';
+	int packetSize = udp.parsePacket();
+	if (packetSize) {
+		int len = udp.read(incomingPacket, 255);
+		if (len > 0) incomingPacket[len] = '\0';
 
-    // Check if it's a game status packet (text format)
-    String packetStr = String(incomingPacket);
-    if (packetStr.startsWith(robotId)) {
-      int sepIndex = packetStr.indexOf(':');
-      if (sepIndex != -1) {
-        gameStatus = packetStr.substring(sepIndex + 1);
-      }
-    }
+		// Check if it's a game status packet (text format)
+		String packetStr = String(incomingPacket);
+		if (packetStr.startsWith(robotId)) {
+			int sepIndex = packetStr.indexOf(':');
+			if (sepIndex != -1) {
+				gameStatus = packetStr.substring(sepIndex + 1);
+			}
+		}
 
-    // Decode controller data (binary format)
-    char robotName[17];
-    uint8_t axes[6];
-    uint8_t buttons[2];
+		// Decode controller data (binary format)
+		char robotName[17];
+		uint8_t axes[6];
+		uint8_t buttons[2];
 
-    memcpy(robotName, incomingPacket, 16);
-    robotName[16] = '\0';
-    memcpy(axes, incomingPacket + 16, 6);
-    memcpy(buttons, incomingPacket + 22, 2);
+		memcpy(robotName, incomingPacket, 16);
+		robotName[16] = '\0';
+		memcpy(axes, incomingPacket + 16, 6);
+		memcpy(buttons, incomingPacket + 22, 2);
 
-    if (String(robotName) == robotId && gameStatus == "teleop") {
-      leftX = axes[0];
-      leftY = axes[1];
-      rightX = axes[2];
-      rightY = axes[3];
+		if (String(robotName) == robotId && gameStatus == "teleop") {
+			leftX = axes[0];
+			leftY = axes[1];
+			rightX = axes[2];
+			rightY = axes[3];
 
-      cross = buttons[0] & 0x01;
-      circle = buttons[0] & 0x02;
-      square = buttons[0] & 0x04;
-      triangle = buttons[0] & 0x08;
-    }
-  }
+			cross = buttons[0] & 0x01;
+			circle = buttons[0] & 0x02;
+			square = buttons[0] & 0x04;
+			triangle = buttons[0] & 0x08;
+		}
+	}
 }
 
 int Minibot::getLeftX() { return leftX; }
@@ -88,37 +100,45 @@ bool Minibot::getTriangle() { return triangle; }
 String Minibot::getGameStatus() { return gameStatus; }
 
 bool Minibot::driveDCMotor(float value) {
-  if (value < -1 || value > 1) {
+	if (value < -1 || value > 1)
+  	{
+		return false;
+	}
+
+  	float pulseWidthMs = 0.5 * value + 1.5;
+    int dutyCycle = (pulseWidthMs / 10.0) * 65535;
+    ledcWrite(DC_PWM_CHANNEL, dutyCycle);
+	return true;
+}
+
+bool Minibot::driveLeft(float value) {
+  if (value < -1 || value > 1)
+  {
     return false;
   }
-  float delayAmt = 0.5 * value + 1.5;
-  digitalWrite(dcMotorPin, HIGH);
-  delay(delayAmt);
-  digitalWrite(dcMotorPin, LOW);
-  delay(10 - delayAmt);
+  float pulseWidthMs = 0.5 * value + 1.5;
+  int dutyCycle = (pulseWidthMs / 10.0) * 65535;
+  ledcWrite(LEFT_PWM_CHANNEL, dutyCycle);
   return true;
 }
 
-bool Minibot::drive(int pin, float value) {
-  if (value < -1 || value > 1) {
+bool Minibot::driveRight(float value) {
+  if (value < -1 || value > 1)
+  {
     return false;
   }
-  float delayAmt = 0.5 * value + 1.5;
-  digitalWrite(pin, HIGH);
-  delay(delayAmt);
-  digitalWrite(pin, LOW);
-  delay(10 - delayAmt);
+  float pulseWidthMs = 0.5 * value + 1.5;
+  int dutyCycle = (pulseWidthMs / 10.0) * 65535;
+  ledcWrite(RIGHT_PWM_CHANNEL, dutyCycle);
   return true;
 }
 
 bool Minibot::driveServoMotor(int angle) {
-  if (angle < -50 || angle > 50) {
-    return false;
-  }
-  float delayAmt = 0.01 * angle + 1.5;
-  digitalWrite(servoMotorPin, HIGH);
-  delay(delayAmt);
-  digitalWrite(servoMotorPin, LOW);
-  delay(10 - delayAmt);
-  return true;
+	if (angle < -50 || angle > 50) {
+		return false;
+	}
+	float delayAmt = 0.01 * angle + 1.5;
+	int dutyCycle = (pulseWidthMs / 10.0) * 65535;
+ 	ledcWrite(SERVO_PWM_CHANNEL, dutyCycle);
+	return true;
 }

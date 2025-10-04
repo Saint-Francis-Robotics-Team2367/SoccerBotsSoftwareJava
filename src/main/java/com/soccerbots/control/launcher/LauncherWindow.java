@@ -142,11 +142,10 @@ public class LauncherWindow extends JFrame {
         // Simulator Button
         JButton simulatorButton = createStyledButton(
             "SIMULATOR",
-            "Launch the robot simulator (Coming Soon)",
+            "Launch the robot simulator with game controller",
             SECONDARY_COLOR
         );
         simulatorButton.addActionListener(e -> launchSimulator());
-        simulatorButton.setEnabled(false); // Disabled for now
 
         gbc.gridx = 1;
         panel.add(simulatorButton, gbc);
@@ -256,10 +255,19 @@ public class LauncherWindow extends JFrame {
     }
 
     private void launchSimulator() {
-        // Placeholder for future simulator implementation
-        JOptionPane.showMessageDialog(this,
-            "Simulator coming soon!",
-            "Not Available",
-            JOptionPane.INFORMATION_MESSAGE);
+        // Close launcher and start the simulator
+        dispose();
+        SwingUtilities.invokeLater(() -> {
+            try {
+                com.soccerbots.control.simulator.SimulatorApp.main(new String[]{});
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(null,
+                    "Failed to launch Simulator: " + e.getMessage(),
+                    "Launch Error",
+                    JOptionPane.ERROR_MESSAGE);
+                System.exit(1);
+            }
+        });
     }
 }
