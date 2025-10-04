@@ -10,19 +10,13 @@ const int LEFT_PWM_CHANNEL = 0;
 const int RIGHT_PWM_CHANNEL = 1;
 const int DC_PWM_CHANNEL = 2;
 const int SERVO_PWM_CHANNEL = 3;
+const int freq = 100;
+const int resolution = 16;
 
 // WiFi Configuration (define these in your main file or config)
-#ifndef WIFI_SSID
 #define WIFI_SSID "WATCHTOWER"
-#endif
-
-#ifndef WIFI_PASSWORD
 #define WIFI_PASSWORD "lancerrobotics"
-#endif
-
-#ifndef UDP_PORT
 #define UDP_PORT 2367
-#endif
 
 class Minibot {
 private:
@@ -47,11 +41,12 @@ private:
     WiFiUDP udp;
     char incomingPacket[256];
 
+
 public:
     // Constructor
     Minibot(const char* robotId,
-            int leftMotorPin, int rightMotorPin,
-            int dcMotorPin, int servoMotorPin);
+          int leftMotorPin = 16, int rightMotorPin = 17,
+          int dcMotorPin = 18, int servoMotorPin = 19);
 
     // Update controller state from UDP packets
     void updateController();

@@ -5,14 +5,13 @@
 Minibot bot("YOUR NAME HERE");
 
 void setup() {
-  // Initialize the minibot (connects to WiFi and sets up motors)
-  bot.init();
+
 }
 
 void loop() {
   // Update controller values from the remote
   bot.updateController();
-  
+
   // TODO: Write your robot control code here
-  
+
 }
