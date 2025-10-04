@@ -376,6 +376,18 @@ public class RobotManager {
         // Stop all robots before shutdown
         setGameState("standby");
 
+        if (discoveryExecutor != null) {
+            discoveryExecutor.shutdown();
+            try {
+                if (!discoveryExecutor.awaitTermination(2, TimeUnit.SECONDS)) {
+                    discoveryExecutor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                discoveryExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+
         if (executorService != null) {
             executorService.shutdown();
             try {
@@ -384,6 +396,7 @@ public class RobotManager {
                 }
             } catch (InterruptedException e) {
                 executorService.shutdownNow();
+                Thread.currentThread().interrupt();
             }
         }
     }

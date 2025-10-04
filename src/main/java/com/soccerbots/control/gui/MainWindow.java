@@ -45,7 +45,8 @@ public class MainWindow {
     private NetworkPanel networkPanel;
     private MonitoringPanel monitoringPanel;
     private SettingsPanel settingsPanel;
-    
+    private javafx.animation.Timeline statusUpdateTimeline;
+
     public MainWindow() {
         initializeManagers();
         createGUI();
@@ -240,11 +241,11 @@ public class MainWindow {
     private void setupEventHandlers() {
         // Start status update timer
         Platform.runLater(() -> {
-            javafx.animation.Timeline timeline = new javafx.animation.Timeline(
+            statusUpdateTimeline = new javafx.animation.Timeline(
                 new javafx.animation.KeyFrame(Duration.seconds(1), e -> updateStatusConnections())
             );
-            timeline.setCycleCount(javafx.animation.Timeline.INDEFINITE);
-            timeline.play();
+            statusUpdateTimeline.setCycleCount(javafx.animation.Timeline.INDEFINITE);
+            statusUpdateTimeline.play();
         });
     }
 
@@ -295,6 +296,12 @@ public class MainWindow {
 
     public void shutdown() {
         logger.info("Shutting down application");
+
+        // Stop status update timeline
+        if (statusUpdateTimeline != null) {
+            statusUpdateTimeline.stop();
+        }
+
         if (controllerManager != null) {
             controllerManager.shutdown();
         }

@@ -315,6 +315,14 @@ public class NetworkManager {
         }
         if (executorService != null) {
             executorService.shutdown();
+            try {
+                if (!executorService.awaitTermination(2, java.util.concurrent.TimeUnit.SECONDS)) {
+                    executorService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executorService.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }
