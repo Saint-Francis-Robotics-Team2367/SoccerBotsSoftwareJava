@@ -27,10 +27,49 @@ This project provides a complete robot control solution with:
 
 ### ESP32 Robots
 - **Hardware**: ESP32-WROOM development boards
-- **Network**: WiFi connection to same network as host
-- **Communication**: UDP ports 12345-12346
+- **Network**: WiFi connection to same network as host (default: "WATCHTOWER")
+- **Communication**: UDP ports 12345 (discovery) and 12346+ (commands)
+- **Firmware**: Arduino IDE with ESP32 board support
 
 ## 🛠️ Quick Start
+
+### ESP32 Robot Setup
+
+**1. Install Arduino IDE and ESP32 Support**
+```bash
+# In Arduino IDE:
+# - File → Preferences → Additional Board URLs
+# - Add: https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+# - Tools → Board → Boards Manager → Search "ESP32" → Install
+```
+
+**2. Configure Robot Firmware**
+```cpp
+// In esp32_robot_firmware/minibots.ino
+Minibot bot("YOUR_ROBOT_NAME_HERE");  // Change to unique name
+```
+
+**3. Upload to ESP32**
+- Open `esp32_robot_firmware/minibots.ino` in Arduino IDE
+- Select Board: "ESP32 Dev Module"
+- Select Port: Your ESP32's COM port
+- Click Upload
+
+**4. Power On Robot**
+- Robot connects to WiFi network "WATCHTOWER" (password: "lancerrobotics")
+- Sends discovery pings every 2 seconds
+- Driver station automatically assigns unique port
+- Robot is ready when driver station shows "connected"
+
+**Robot LED Indicators (via Serial Monitor):**
+- "Connecting to WiFi..." - Attempting WiFi connection
+- "Connected! IP: X.X.X.X" - WiFi connected successfully
+- "Sent discovery ping" - Broadcasting presence to driver station
+- "Assigned port XXXX - connected!" - Port received from driver station
+- "EMERGENCY STOP ACTIVATED" - All motors stopped
+- "Emergency stop released" - Ready for movement commands
+
+**Important:** Each robot must have a unique name in the firmware!
 
 ### Option 1: Native Desktop App (Recommended)
 
@@ -211,25 +250,48 @@ Real-time events:
 ## 🌐 Robot Communication Protocol
 
 ### Discovery Protocol (UDP Port 12345)
-- **Broadcast**: Host sends discovery requests
-- **Response**: Robots reply with ID and IP address
+**New Dynamic Port Assignment System:**
 
-### Command Protocol (UDP Port 12346)
-- **Format**: JSON with movement commands
-- **Example**:
-  ```json
-  {
-    "command": "move",
-    "forward": 0.5,
-    "sideways": 0.0,
-    "rotation": 0.2
-  }
-  ```
+1. **Robot Startup**: ESP32 powers on and connects to WiFi
+2. **Discovery Ping**: Robot broadcasts `DISCOVER:<name>:<IP>` every 2 seconds
+3. **Port Assignment**: Driver station responds with `PORT:<name>:<port>` (12346+)
+4. **Connected**: Robot switches to assigned port for commands
+5. **Timeout**: After 5 seconds without commands, robot reverts to discovery mode
+
+**Benefits:**
+- No manual IP configuration required
+- Automatic reconnection after power cycle
+- Minimal ESP32 code (~150 lines)
+- Each robot gets unique port per session
+
+### Command Protocol (Assigned Port 12346+)
+**Binary Movement Commands (24 bytes):**
+```
+Bytes 0-15:  Robot name (null-padded)
+Bytes 16-19: Axes (leftX, leftY, rightX, rightY) [0-255]
+Bytes 20-21: Unused
+Bytes 22:    Buttons (cross, circle, square, triangle)
+Bytes 23:    Unused
+```
+
+**Text Commands:**
+- `<name>:teleop` - Enable movement
+- `<name>:standby` - Disable movement
+- `ESTOP` - Emergency stop (stops all motors)
+- `ESTOP_OFF` - Release emergency stop
+
+### Emergency Stop Behavior
+- Sent to **all robots** on discovery port (always monitored)
+- Persists until `ESTOP_OFF` received or robot power cycled
+- Blocks all movement commands while active
+- Works even when robot is disconnected
 
 ### Controller Mapping
 - **Left Stick**: Forward/sideways movement
 - **Right Stick X**: Rotation
-- **Values**: Normalized -1.0 to 1.0
+- **Values**: Normalized -1.0 to 1.0 (converted to 0-255 for ESP32)
+
+**See [ROBOT_PROTOCOL.md](ROBOT_PROTOCOL.md) for complete protocol specification.**
 
 ## 🎮 Using the Native Desktop App
 
@@ -238,28 +300,41 @@ Real-time events:
 npm start
 ```
 
-### 2. Scan for Robots
-- Click **Refresh** in the Robot Connections panel
-- Robots on your network will appear automatically
+### 2. Automatic Robot Discovery
+- **No manual scanning needed!** Robots automatically appear when powered on
+- Driver station listens for discovery pings (passive mode)
+- Each robot gets assigned a unique port automatically
+- Watch the **Robot Connections** panel for discovered robots
 
 ### 3. Connect to Robots
-- Click **Connect** on any discovered robot
-- Status indicator will turn green when connected
+- Discovered robots show in the left panel with status "discovered"
+- Click **Connect** to start sending commands
+- Status changes to "connected" with green indicator
+- Robot receives commands on its assigned port
 
 ### 4. Attach Controllers
 - Plug in USB game controller
 - Controllers appear automatically in the interface
+- Pair controller to robot in Controller panel
 - Input is sent to paired robots in real-time
 
 ### 5. Emergency Stop
 - Red **Emergency Stop** button in Control Panel
-- Instantly halts all robot operations
-- Click again to resume
+- Sends ESTOP command to **all robots** immediately
+- All motors halt, movement blocked
+- Click again to send ESTOP_OFF and resume operations
+- **Note**: Emergency stop persists across disconnects and requires explicit release
 
 ### 6. Monitor System
 - **Network Analysis**: View latency and bandwidth charts
-- **Terminal Monitor**: See real-time system commands
-- **Service Log**: Track all events with timestamps
+- **Terminal Monitor**: See real-time system commands and discovery events
+- **Service Log**: Track all events including discovery pings, port assignments, and emergency stops
+
+### 7. Reconnection Handling
+- If robot loses connection (timeout), it reverts to discovery mode
+- Driver station automatically reassigns the same port
+- No manual intervention required
+- Power cycling robot clears emergency stop state
 
 ## 🔧 Development
 
@@ -338,10 +413,62 @@ mvn clean compile assembly:single
 
 ### Robots Not Discovered
 
-- Ensure robots and host on same WiFi network
-- Check firewall allows UDP ports 12345-12346
-- Verify ESP32 firmware running and configured
-- Try manual refresh in UI
+**Check ESP32:**
+- Open Arduino Serial Monitor (115200 baud)
+- Look for "Connected! IP: X.X.X.X" - confirms WiFi connection
+- Look for "Sent discovery ping" - confirms broadcasting
+- Verify robot name matches what you expect
+
+**Check Driver Station:**
+- Ensure listening on port 12345 (check logs for "Discovery service started")
+- Check firewall allows UDP port 12345 (incoming)
+- Verify both robot and host are on same subnet (e.g., 192.168.1.x)
+- Look in Terminal Monitor for discovery ping messages
+
+**Common Issues:**
+- WiFi credentials incorrect in firmware (WIFI_SSID/WIFI_PASSWORD)
+- Firewall blocking UDP port 12345
+- Robot and driver station on different networks
+- Multiple driver stations responding (port conflict)
+
+### Robot Won't Move
+
+**Check Connection:**
+- Robot must show "connected" status (green indicator)
+- Check Serial Monitor for "Assigned port XXXX - connected!"
+- Verify no emergency stop active (shows in UI and Serial Monitor)
+
+**Check Game State:**
+- Robot only moves in "teleop" mode
+- Driver station must send game state command
+- Check Terminal Monitor for game state messages
+
+**Emergency Stop Active:**
+- Look for "EMERGENCY STOP ACTIVATED" in Serial Monitor
+- Red indicator in Control Panel
+- Click emergency stop button to release
+- Or power cycle robot to clear
+
+### Robot Keeps Disconnecting
+
+**Timeout Issues:**
+- Robot expects commands every 5 seconds
+- Check network latency and packet loss
+- Verify driver station is sending keepalive messages
+- Look for "Connection timeout" in Serial Monitor
+
+**WiFi Issues:**
+- Weak signal strength
+- Network congestion
+- Router interference
+- Try moving robot closer to access point
+
+### Emergency Stop Won't Release
+
+- Click emergency stop button in Control Panel (shows ESTOP_OFF in logs)
+- Verify command sent to robot IP (check Terminal Monitor)
+- Robot Serial Monitor should show "Emergency stop released"
+- If stuck: Power cycle robot (clears emergency stop state)
 
 ### Build Issues
 
@@ -361,6 +488,7 @@ cd ../electron && rm -rf node_modules package-lock.json && npm install
 
 ## 📚 Additional Documentation
 
+- **[ROBOT_PROTOCOL.md](ROBOT_PROTOCOL.md)** - Complete protocol specification with discovery, port assignment, and emergency stop
 - **[ELECTRON_APP_README.md](ELECTRON_APP_README.md)** - Detailed Electron app guide
 - **[INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)** - Setup instructions
 - **[USER_MANUAL.md](USER_MANUAL.md)** - Complete operational guide
@@ -389,8 +517,25 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 | Run JavaFX GUI | `mvn javafx:run` |
 | Run simulator | `java -cp target/*-jar-with-dependencies.jar com.soccerbots.control.simulator.SimulatorApp` |
 | Build everything | `npm run build:all` |
-| Development mode | See "Running in Development" section |
+| Flash ESP32 firmware | Open `esp32_robot_firmware/minibots.ino` in Arduino IDE → Upload |
+| Check robot status | Arduino Serial Monitor @ 115200 baud |
+| Discovery port | UDP 12345 (firewall must allow) |
+| Command ports | UDP 12346+ (auto-assigned per robot) |
+| Emergency stop | Click E-Stop button in Control Panel or send `ESTOP` via UDP |
+
+### Protocol Ports Reference
+
+| Port | Purpose | Direction |
+|------|---------|-----------|
+| 12345 | Robot discovery pings | ESP32 → Driver Station (broadcast) |
+| 12345 | Port assignment | Driver Station → ESP32 (unicast) |
+| 12345 | Emergency stop | Driver Station → ESP32 (unicast) |
+| 12346+ | Movement commands | Driver Station → ESP32 (assigned per robot) |
+| 12346+ | Game state | Driver Station → ESP32 (assigned per robot) |
+| 8080 | REST API | Frontend → Backend (localhost) |
+| 8080 | WebSocket | Frontend ↔ Backend (localhost) |
 
 ---
 
 **Choose your interface: Modern React UI, Classic JavaFX, or Lightweight Simulator** ✨
+**Protocol: Automatic discovery with dynamic port assignment - zero configuration!** 🤖
