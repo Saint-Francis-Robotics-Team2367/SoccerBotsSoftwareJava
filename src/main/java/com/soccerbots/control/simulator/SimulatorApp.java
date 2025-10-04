@@ -1,8 +1,8 @@
 package com.soccerbots.control.simulator;
 
 import com.soccerbots.control.controller.ControllerInput;
-import com.soccerbots.control.controller.ControllerManager;
 import com.soccerbots.control.controller.GameController;
+import net.java.games.input.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,6 +10,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Lightweight 3D robot simulator with game controller support
@@ -23,8 +27,9 @@ public class SimulatorApp extends JFrame {
 
     private SimulatorRenderer renderer;
     private SimulatorWorld world;
-    private ControllerManager controllerManager;
+    private Map<String, GameController> connectedControllers;
     private Timer updateTimer;
+    private Timer controllerDetectionTimer;
     private boolean running = false;
 
     public SimulatorApp() {
@@ -41,9 +46,9 @@ public class SimulatorApp extends JFrame {
         renderer.setPreferredSize(new Dimension(WINDOW_WIDTH, WINDOW_HEIGHT));
         renderer.setFocusable(true);
 
-        // Initialize controller manager
-        controllerManager = new ControllerManager();
-        controllerManager.initialize();
+        // Initialize controller management
+        connectedControllers = new ConcurrentHashMap<>();
+        startControllerDetection();
 
         // Setup UI
         setupUI();
@@ -96,7 +101,7 @@ public class SimulatorApp extends JFrame {
 
         // Update labels periodically
         Timer labelUpdateTimer = new Timer(100, e -> {
-            java.util.List<GameController> controllers = controllerManager.getControllers();
+            List<GameController> controllers = new ArrayList<>(connectedControllers.values());
             if (!controllers.isEmpty()) {
                 GameController controller = controllers.get(0);
                 controllerLabel.setText("Controller: " + controller.getName());
@@ -192,22 +197,161 @@ public class SimulatorApp extends JFrame {
         updateTimer.start();
     }
 
+    private void startControllerDetection() {
+        controllerDetectionTimer = new Timer(5000, e -> detectControllers());
+        controllerDetectionTimer.start();
+        detectControllers(); // Initial detection
+    }
+
+    private void detectControllers() {
+        try {
+            ControllerEnvironment env = ControllerEnvironment.getDefaultEnvironment();
+            if (env == null) {
+                logger.warn("Controller environment is not available");
+                return;
+            }
+
+            Controller[] controllers;
+            try {
+                controllers = env.getControllers();
+            } catch (UnsatisfiedLinkError e) {
+                logger.warn("JInput native libraries not available. Controller support disabled.");
+                return;
+            } catch (Exception e) {
+                logger.error("Failed to get controllers from environment", e);
+                return;
+            }
+
+            if (controllers == null) return;
+
+            for (Controller controller : controllers) {
+                if (controller == null) continue;
+
+                // Check for game controllers
+                if (controller.getType() == Controller.Type.GAMEPAD ||
+                    controller.getType() == Controller.Type.STICK ||
+                    (controller.getName() != null && (
+                        controller.getName().toLowerCase().contains("gamepad") ||
+                        controller.getName().toLowerCase().contains("controller") ||
+                        controller.getName().toLowerCase().contains("xbox") ||
+                        controller.getName().toLowerCase().contains("playstation")))) {
+
+                    try {
+                        if (!controller.poll()) continue;
+                    } catch (Exception pollException) {
+                        continue;
+                    }
+
+                    String controllerId = controller.getName().replaceAll("[^a-zA-Z0-9]", "_") + "_" +
+                                        Math.abs(controller.hashCode());
+
+                    if (!connectedControllers.containsKey(controllerId)) {
+                        GameController gameController = new GameController(controllerId, controller);
+                        connectedControllers.put(controllerId, gameController);
+                        logger.info("Detected new controller: {} (Type: {})", controller.getName(), controller.getType());
+                    }
+                }
+            }
+
+            removeDisconnectedControllers();
+
+        } catch (Exception e) {
+            logger.error("Error detecting controllers", e);
+        }
+    }
+
+    private void removeDisconnectedControllers() {
+        connectedControllers.entrySet().removeIf(entry -> {
+            try {
+                Controller controller = entry.getValue().getController();
+                if (!controller.poll()) {
+                    logger.info("Controller disconnected: {}", controller.getName());
+                    return true;
+                }
+            } catch (Exception e) {
+                logger.warn("Error polling controller, removing: {}", entry.getKey());
+                return true;
+            }
+            return false;
+        });
+    }
+
     private void updateControllerInput() {
-        java.util.List<GameController> controllers = controllerManager.getControllers();
+        List<GameController> controllers = new ArrayList<>(connectedControllers.values());
         if (controllers.isEmpty()) return;
 
-        GameController controller = controllers.get(0);
-        controller.poll();
-        ControllerInput input = controller.getInput();
+        GameController gameController = controllers.get(0);
+        Controller controller = gameController.getController();
+
+        try {
+            if (!controller.poll()) return;
+        } catch (Exception e) {
+            logger.error("Failed to poll controller", e);
+            return;
+        }
+
+        ControllerInput input = readControllerInput(controller);
+        gameController.updateInput(input);
 
         // Use the same control scheme as the real robot
         // Left stick: forward/sideways movement
         // Right stick X: rotation
-        double forward = input.getForward();
-        double sideways = input.getSideways();
-        double rotation = input.getRotation();
+        double forward = -input.getLeftStickY();  // Invert for forward
+        double sideways = input.getLeftStickX();
+        double rotation = input.getRightStickX();
 
         world.getRobot().setControllerInput(sideways, forward, rotation);
+    }
+
+    private ControllerInput readControllerInput(Controller controller) {
+        ControllerInput input = new ControllerInput();
+
+        net.java.games.input.Component[] components = controller.getComponents();
+        for (net.java.games.input.Component component : components) {
+            float value = component.getPollData();
+            String name = component.getName();
+
+            switch (name.toLowerCase()) {
+                case "x":
+                case "x axis":
+                    input.setLeftStickX(value);
+                    break;
+                case "y":
+                case "y axis":
+                    input.setLeftStickY(-value); // Invert Y axis
+                    break;
+                case "rx":
+                case "z rotation":
+                    input.setRightStickX(value);
+                    break;
+                case "ry":
+                case "z axis":
+                    input.setRightStickY(-value); // Invert Y axis
+                    break;
+                case "z":
+                case "left trigger":
+                    input.setLeftTrigger(value);
+                    break;
+                case "rz":
+                case "right trigger":
+                    input.setRightTrigger(value);
+                    break;
+                case "pov":
+                case "hat switch":
+                    input.setDPad(value);
+                    break;
+                default:
+                    if (component.getIdentifier() instanceof net.java.games.input.Component.Identifier.Button) {
+                        net.java.games.input.Component.Identifier.Button button =
+                            (net.java.games.input.Component.Identifier.Button) component.getIdentifier();
+                        int buttonIndex = button.toString().hashCode() % 16;
+                        input.setButton(buttonIndex, value > 0.5f);
+                    }
+                    break;
+            }
+        }
+
+        return input;
     }
 
     public void stop() {
@@ -215,8 +359,8 @@ public class SimulatorApp extends JFrame {
         if (updateTimer != null) {
             updateTimer.stop();
         }
-        if (controllerManager != null) {
-            controllerManager.shutdown();
+        if (controllerDetectionTimer != null) {
+            controllerDetectionTimer.stop();
         }
     }
 
