@@ -12,20 +12,116 @@ import java.util.Map;
 
 public class RobotManager {
     private static final Logger logger = LoggerFactory.getLogger(RobotManager.class);
+    private static final int DISCOVERY_PORT = 12345;
+    private static final int COMMAND_PORT_BASE = 12346;
 
     private final NetworkManager networkManager;
     private final Map<String, Robot> connectedRobots;
+    private final Map<String, Robot> discoveredRobots;
+    private final Map<String, Integer> robotPortAssignments;
     private final ExecutorService executorService;
+    private final ScheduledExecutorService discoveryExecutor;
 
     // Game state management
     private volatile String currentGameState = "standby";
+    private volatile boolean emergencyStopActive = false;
+    private int nextAvailablePort = COMMAND_PORT_BASE;
 
     public RobotManager(NetworkManager networkManager) {
         this.networkManager = networkManager;
         this.connectedRobots = new ConcurrentHashMap<>();
+        this.discoveredRobots = new ConcurrentHashMap<>();
+        this.robotPortAssignments = new ConcurrentHashMap<>();
         this.executorService = Executors.newCachedThreadPool();
+        this.discoveryExecutor = Executors.newScheduledThreadPool(1);
 
-        logger.info("ESP32 Robot Manager initialized");
+        logger.info("ESP32 Robot Manager initialized with discovery protocol");
+    }
+
+    /**
+     * Start discovery service - listens for robot discovery pings
+     */
+    public void startDiscovery() {
+        discoveryExecutor.scheduleAtFixedRate(this::listenForDiscoveryPings, 0, 500, TimeUnit.MILLISECONDS);
+        logger.info("Discovery service started on port {}", DISCOVERY_PORT);
+    }
+
+    /**
+     * Listen for robot discovery pings and assign ports
+     */
+    private void listenForDiscoveryPings() {
+        try {
+            String message = networkManager.receiveDiscoveryMessage();
+            if (message != null && message.startsWith("DISCOVER:")) {
+                handleDiscoveryPing(message);
+            }
+        } catch (Exception e) {
+            logger.debug("Discovery listening error: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Handle discovery ping from robot: "DISCOVER:<robotId>:<IP>"
+     */
+    private void handleDiscoveryPing(String message) {
+        String[] parts = message.split(":");
+        if (parts.length >= 3) {
+            String robotId = parts[1];
+            String ipAddress = parts[2];
+
+            // Check if robot already has port assignment
+            if (!robotPortAssignments.containsKey(robotId)) {
+                assignPortToRobot(robotId, ipAddress);
+            } else {
+                // Re-send port assignment
+                int port = robotPortAssignments.get(robotId);
+                sendPortAssignment(robotId, ipAddress, port);
+            }
+
+            // Add/update discovered robot
+            Robot robot = discoveredRobots.get(robotId);
+            if (robot == null) {
+                robot = new Robot(robotId, robotId, ipAddress, "discovered");
+                discoveredRobots.put(robotId, robot);
+                logger.info("Discovered new robot: {} at {}", robotId, ipAddress);
+            } else {
+                robot.setIpAddress(ipAddress);
+                robot.updateLastSeenTime();
+            }
+        }
+    }
+
+    /**
+     * Assign a unique port to a robot
+     */
+    private void assignPortToRobot(String robotId, String ipAddress) {
+        int assignedPort = nextAvailablePort++;
+        robotPortAssignments.put(robotId, assignedPort);
+        sendPortAssignment(robotId, ipAddress, assignedPort);
+        logger.info("Assigned port {} to robot {}", assignedPort, robotId);
+    }
+
+    /**
+     * Send port assignment to robot: "PORT:<robotId>:<port>"
+     */
+    private void sendPortAssignment(String robotId, String ipAddress, int port) {
+        String message = "PORT:" + robotId + ":" + port;
+        networkManager.sendDiscoveryResponse(ipAddress, message);
+    }
+
+    /**
+     * Scan for robots - This method is now passive, just waits for discovery pings
+     */
+    public void scanForRobots() {
+        logger.info("Scanning for robots (passive discovery mode)");
+        // Discovery is automatic via startDiscovery()
+    }
+
+    /**
+     * Get all discovered robots
+     */
+    public List<Robot> getDiscoveredRobots() {
+        return new ArrayList<>(discoveredRobots.values());
     }
 
     /**
@@ -34,6 +130,12 @@ public class RobotManager {
     public Robot addRobot(String robotName, String ipAddress) {
         Robot robot = new Robot(robotName, robotName, ipAddress, "connected");
         connectedRobots.put(robotName, robot);
+
+        // Assign port if not already assigned
+        if (!robotPortAssignments.containsKey(robotName)) {
+            assignPortToRobot(robotName, ipAddress);
+        }
+
         logger.info("Added ESP32 robot: {} at {}", robotName, ipAddress);
         return robot;
     }
@@ -123,10 +225,40 @@ public class RobotManager {
      */
     public void emergencyStopAll() {
         logger.warn("EMERGENCY STOP - Halting all ESP32 robots");
+        emergencyStopActive = true;
         setGameState("standby"); // This will stop all movement
+
+        // Send ESTOP command to all discovered and connected robots
+        for (Robot robot : discoveredRobots.values()) {
+            networkManager.sendEmergencyStop(robot.getIpAddress());
+        }
         for (Robot robot : connectedRobots.values()) {
+            networkManager.sendEmergencyStop(robot.getIpAddress());
             sendStopCommand(robot.getId());
         }
+    }
+
+    /**
+     * Deactivate emergency stop
+     */
+    public void deactivateEmergencyStop() {
+        logger.info("Deactivating emergency stop");
+        emergencyStopActive = false;
+
+        // Send ESTOP_OFF command to all discovered and connected robots
+        for (Robot robot : discoveredRobots.values()) {
+            networkManager.sendEmergencyStopRelease(robot.getIpAddress());
+        }
+        for (Robot robot : connectedRobots.values()) {
+            networkManager.sendEmergencyStopRelease(robot.getIpAddress());
+        }
+    }
+
+    /**
+     * Check if emergency stop is active
+     */
+    public boolean isEmergencyStopActive() {
+        return emergencyStopActive;
     }
 
     /**

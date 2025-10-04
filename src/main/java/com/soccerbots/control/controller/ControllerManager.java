@@ -285,6 +285,7 @@ public class ControllerManager {
 
     public void deactivateEmergencyStop() {
         emergencyStopActive = false;
+        robotManager.deactivateEmergencyStop();
         logger.info("Emergency stop deactivated - controller inputs re-enabled");
     }
 

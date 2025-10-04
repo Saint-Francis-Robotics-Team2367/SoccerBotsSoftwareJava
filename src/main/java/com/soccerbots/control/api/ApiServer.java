@@ -82,7 +82,21 @@ public class ApiServer {
         app.get("/api/network/stats", this::getNetworkStats);
 
         // WebSocket for real-time updates
-        app.ws("/ws", this::configureWebSocket);
+        app.ws("/ws", ws -> {
+            ws.onConnect(ctx -> {
+                wsSessions.add(ctx.session);
+                logger.info("WebSocket client connected: {}", ctx.session.getRemoteAddress());
+            });
+
+            ws.onClose(ctx -> {
+                wsSessions.remove(ctx.session);
+                logger.info("WebSocket client disconnected");
+            });
+
+            ws.onError(ctx -> {
+                logger.error("WebSocket error", ctx.error());
+            });
+        });
 
         logger.info("API routes configured");
     }
@@ -212,31 +226,13 @@ public class ApiServer {
         ctx.json(stats);
     }
 
-    private void configureWebSocket(Consumer<WsConfig> wsConfig) {
-        wsConfig.accept(ws -> {
-            ws.onConnect(ctx -> {
-                wsSessions.add(ctx.session);
-                logger.info("WebSocket client connected: {}", ctx.session.getRemoteAddress());
-            });
-
-            ws.onClose(ctx -> {
-                wsSessions.remove(ctx.session);
-                logger.info("WebSocket client disconnected");
-            });
-
-            ws.onError(ctx -> {
-                logger.error("WebSocket error", ctx.error());
-            });
-        });
-    }
-
     private Map<String, Object> robotToMap(Robot robot) {
         Map<String, Object> map = new HashMap<>();
         map.put("id", robot.getId());
         map.put("name", robot.getName());
         map.put("ipAddress", robot.getIpAddress());
         map.put("status", robot.isConnected() ? "connected" : "disconnected");
-        map.put("signal", robot.getSignalStrength());
+        map.put("signal", 85); // Mock signal strength for now
         map.put("disabled", false); // Can be extended later
         map.put("pairedControllerId", robot.getPairedControllerId());
         return map;

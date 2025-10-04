@@ -11,26 +11,40 @@ public class NetworkManager {
     private static final Logger logger = LoggerFactory.getLogger(NetworkManager.class);
 
     // ESP32 Communication Constants
-    public static final int ESP32_UDP_PORT = 2367;
+    public static final int DISCOVERY_PORT = 12345;
+    public static final int COMMAND_PORT_BASE = 12346;
+    public static final int ESP32_UDP_PORT = 2367; // Legacy port
     public static final String EXPECTED_WIFI_NETWORK = "WATCHTOWER";
 
     private boolean isConnectedToNetwork = false;
     private String currentSSID = "";
     private ExecutorService executorService;
     private DatagramSocket udpSocket;
+    private DatagramSocket discoverySocket;
 
     public NetworkManager() {
         this.executorService = Executors.newCachedThreadPool();
         checkCurrentNetworkStatus();
         initializeUDPSocket();
+        initializeDiscoverySocket();
     }
 
     private void initializeUDPSocket() {
         try {
             udpSocket = new DatagramSocket();
-            logger.info("UDP socket initialized for ESP32 communication on port {}", ESP32_UDP_PORT);
+            logger.info("UDP socket initialized for ESP32 communication");
         } catch (SocketException e) {
             logger.error("Failed to initialize UDP socket", e);
+        }
+    }
+
+    private void initializeDiscoverySocket() {
+        try {
+            discoverySocket = new DatagramSocket(DISCOVERY_PORT);
+            discoverySocket.setSoTimeout(100); // 100ms timeout for non-blocking receives
+            logger.info("Discovery socket initialized on port {}", DISCOVERY_PORT);
+        } catch (SocketException e) {
+            logger.error("Failed to initialize discovery socket", e);
         }
     }
 
@@ -206,10 +220,98 @@ public class NetworkManager {
         return EXPECTED_WIFI_NETWORK;
     }
 
+    /**
+     * Receive discovery message from robot
+     * Returns null if no message available (non-blocking)
+     */
+    public String receiveDiscoveryMessage() {
+        try {
+            byte[] buffer = new byte[256];
+            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+            discoverySocket.receive(packet);
+            String message = new String(packet.getData(), 0, packet.getLength());
+            logger.debug("Received discovery message: {}", message);
+            return message;
+        } catch (SocketTimeoutException e) {
+            // No message available, this is normal
+            return null;
+        } catch (Exception e) {
+            logger.error("Error receiving discovery message", e);
+            return null;
+        }
+    }
+
+    /**
+     * Send discovery response to robot
+     */
+    public void sendDiscoveryResponse(String targetIP, String message) {
+        executorService.submit(() -> {
+            try {
+                byte[] data = message.getBytes();
+                DatagramPacket packet = new DatagramPacket(
+                    data, data.length,
+                    InetAddress.getByName(targetIP), DISCOVERY_PORT
+                );
+                udpSocket.send(packet);
+                logger.debug("Sent discovery response to {}: {}", targetIP, message);
+            } catch (Exception e) {
+                logger.error("Failed to send discovery response to " + targetIP, e);
+            }
+        });
+    }
+
+    /**
+     * Send emergency stop to robot
+     */
+    public void sendEmergencyStop(String targetIP) {
+        executorService.submit(() -> {
+            try {
+                String message = "ESTOP";
+                byte[] data = message.getBytes();
+
+                // Send to discovery port (robot always listens here when connected)
+                DatagramPacket packet = new DatagramPacket(
+                    data, data.length,
+                    InetAddress.getByName(targetIP), DISCOVERY_PORT
+                );
+                udpSocket.send(packet);
+
+                logger.info("Sent emergency stop to {}", targetIP);
+            } catch (Exception e) {
+                logger.error("Failed to send emergency stop to " + targetIP, e);
+            }
+        });
+    }
+
+    /**
+     * Send emergency stop release to robot
+     */
+    public void sendEmergencyStopRelease(String targetIP) {
+        executorService.submit(() -> {
+            try {
+                String message = "ESTOP_OFF";
+                byte[] data = message.getBytes();
+
+                DatagramPacket packet = new DatagramPacket(
+                    data, data.length,
+                    InetAddress.getByName(targetIP), DISCOVERY_PORT
+                );
+                udpSocket.send(packet);
+
+                logger.info("Sent emergency stop release to {}", targetIP);
+            } catch (Exception e) {
+                logger.error("Failed to send emergency stop release to " + targetIP, e);
+            }
+        });
+    }
+
     public void shutdown() {
         logger.info("Shutting down network manager");
         if (udpSocket != null && !udpSocket.isClosed()) {
             udpSocket.close();
+        }
+        if (discoverySocket != null && !discoverySocket.isClosed()) {
+            discoverySocket.close();
         }
         if (executorService != null) {
             executorService.shutdown();

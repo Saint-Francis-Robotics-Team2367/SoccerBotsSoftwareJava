@@ -13,10 +13,11 @@ const int SERVO_PWM_CHANNEL = 3;
 const int freq = 100;
 const int resolution = 16;
 
-// WiFi Configuration (define these in your main file or config)
+// WiFi Configuration
 #define WIFI_SSID "WATCHTOWER"
 #define WIFI_PASSWORD "lancerrobotics"
-#define UDP_PORT 2367
+#define DISCOVERY_PORT 12345
+#define COMMAND_PORT_BASE 12346
 
 class Minibot {
 private:
@@ -37,9 +38,17 @@ private:
     bool triangle;
 
     String gameStatus;
+    bool emergencyStop;
+    bool connected;
+    unsigned int assignedPort;
+    unsigned long lastPingTime;
+    unsigned long lastCommandTime;
 
     WiFiUDP udp;
     char incomingPacket[256];
+
+    void sendDiscoveryPing();
+    void stopAllMotors();
 
 
 public:
