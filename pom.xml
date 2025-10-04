@@ -61,6 +61,27 @@
             <version>1.4.8</version>
         </dependency>
 
+        <!-- Javalin Web Framework (lightweight HTTP + WebSocket server) -->
+        <dependency>
+            <groupId>io.javalin</groupId>
+            <artifactId>javalin</artifactId>
+            <version>5.6.3</version>
+        </dependency>
+
+        <!-- WebSocket Support -->
+        <dependency>
+            <groupId>org.eclipse.jetty.websocket</groupId>
+            <artifactId>websocket-jetty-server</artifactId>
+            <version>11.0.15</version>
+        </dependency>
+
+        <!-- CORS Support -->
+        <dependency>
+            <groupId>io.javalin</groupId>
+            <artifactId>javalin-bundle</artifactId>
+            <version>5.6.3</version>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

@@ -1,0 +1,24 @@
+{
+  "name": "soccerbots-control-system",
+  "version": "1.0.0",
+  "description": "SoccerBots Robot Control System - Native Desktop Application",
+  "scripts": {
+    "build:backend": "mvn clean compile assembly:single",
+    "build:frontend": "cd frontend && npm run build",
+    "build:all": "npm run build:backend && npm run build:frontend",
+    "dev:backend": "mvn exec:java -Dexec.mainClass=\"com.soccerbots.control.HeadlessLauncher\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:electron": "cd electron && npm start",
+    "install:all": "cd frontend && npm install && cd ../electron && npm install",
+    "start": "npm run build:all && cd electron && npm start",
+    "dist": "npm run build:all && cd electron && npm run build"
+  },
+  "keywords": [
+    "robotics",
+    "control",
+    "desktop",
+    "electron"
+  ],
+  "author": "SoccerBots Team",
+  "license": "MIT"
+}
