@@ -70,3 +70,17 @@ config.properties
 # Test files
 test-results/
 coverage/
+
+# Node.js / Electron / React
+node_modules/
+electron/node_modules/
+frontend/node_modules/
+package-lock.json
+npm-debug.log
+yarn-error.log
+
+# Claude Code
+.claude/
+
+# Windows null file
+nul

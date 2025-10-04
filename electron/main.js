@@ -31,7 +31,11 @@ function startJavaBackend() {
     console.log('[Java Backend] Starting backend...');
     console.log('[Java Backend] JAR path:', jarPath);
 
+    const nativeLibPath = path.join(__dirname, '..', 'native');
+
     javaProcess = spawn(javaPath, [
+      `-Djava.library.path=${nativeLibPath}`,
+      '--enable-native-access=ALL-UNNAMED',
       '-cp',
       jarPath,
       'com.soccerbots.control.HeadlessLauncher',
