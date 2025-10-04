@@ -1,343 +1,396 @@
 # SoccerBots Control Station
 
-A modern, Grok AI-inspired JavaFX control system for ESP32-based soccer robots with real-time controller input, WiFi networking, and professional dark-mode interface.
+A modern robot control system for ESP32-based soccer robots with multiple interface options: a sleek Electron-based React UI, JavaFX GUI, and a lightweight 3D simulator.
 
-![System Architecture](https://img.shields.io/badge/Platform-ESP32%20%2B%20JavaFX-blue)
+![System Architecture](https://img.shields.io/badge/Platform-ESP32%20%2B%20React%20%2B%20Java-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Version](https://img.shields.io/badge/Version-1.0.0-orange)
-![Theme](https://img.shields.io/badge/UI-Grok%20Inspired-purple)
 
-## 🚀 Features
+## 🚀 Overview
 
-### Modern JavaFX Interface
-- **🎨 Grok AI-Inspired Theme** - Dark-mode interface with cosmic aesthetics
-- **💫 Smooth Animations** - 150-200ms transitions with subtle scaling effects
-- **🎯 Intuitive Navigation** - Clean header with pill-shaped navigation buttons
-- **📱 Responsive Design** - Adapts to different screen sizes and resolutions
-- **♿ High Accessibility** - Strong contrast ratios and readable typography
-- **🌙 Dark-First Design** - Professional appearance optimized for control rooms
-
-### ESP32 Robot Integration
-- **📡 WATCHTOWER Network** - Dedicated network for ESP32 robot communication
-- **🔗 Manual Robot Addition** - Direct IP-based robot connections
-- **⚡ Binary UDP Protocol** - High-performance 24-byte command packets
-- **🎮 Direct Controller Mapping** - Real-time stick-to-robot input translation
-- **🟢 Game State Management** - Teleop/standby mode control
-- **📊 Live Status Monitoring** - Real-time connection and robot status
-
-### Communication Protocol
-- **🌐 ESP32 UDP** - Port 2367 binary communication
-- **📋 Binary Commands** - Optimized packet structure (16 + 6 + 2 bytes)
-- **🎯 Robot Targeting** - Name-based robot identification
-- **🔄 Real-time Updates** - ~60Hz controller input processing
+This project provides a complete robot control solution with:
+- **Native Desktop App** - Modern React UI powered by Electron + Java backend
+- **JavaFX GUI** - Classic desktop interface (legacy)
+- **3D Simulator** - Lightweight robot simulator with controller support
+- **Headless API Mode** - REST API + WebSocket server for custom frontends
 
 ## 📋 Requirements
 
-### Host Computer
-- **OS**: Windows 10/11, macOS 10.14+, or Linux Ubuntu 18.04+
-- **Java**: Java 17 or later (with JavaFX support)
-- **RAM**: 4GB minimum, 8GB+ recommended
-- **Network**: WiFi connection to WATCHTOWER network
-- **Controllers**: USB game controllers (Xbox, PlayStation, etc.)
+### All Modes
+- **Java**: JDK 17 or later
+- **Maven**: 3.8+ for building
+- **Controllers**: USB game controllers (Xbox, PlayStation, etc.) via JInput
+
+### Native Desktop App (Electron + React)
+- **Node.js**: 18+ and npm
+- **OS**: Windows 10/11, macOS 10.14+, or Linux
 
 ### ESP32 Robots
 - **Hardware**: ESP32-WROOM development boards
-- **Network**: Pre-configured for WATCHTOWER WiFi network
-- **Power**: 5V power supply or battery pack
-- **Communication**: UDP port 2367 listener
+- **Network**: WiFi connection to same network as host
+- **Communication**: UDP ports 12345-12346
 
 ## 🛠️ Quick Start
 
-### 1. Host Application Setup
+### Option 1: Native Desktop App (Recommended)
+
+The modern Electron + React interface with real-time updates.
+
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd SoccerBotsSoftwareJava
+# 1. Install all dependencies
+npm run install:all
 
-# Build the JavaFX application
+# 2. Build Java backend
+npm run build:backend
+
+# 3. Build frontend
+npm run build:frontend
+
+# 4. Run the app
+npm start
+```
+
+**Development Mode** (3 terminals for hot reload):
+```bash
+# Terminal 1: Java backend with API
+npm run dev:backend
+
+# Terminal 2: React frontend (Vite dev server)
+npm run dev:frontend
+
+# Terminal 3: Electron window
+npm run dev:electron
+```
+
+**Build Distributable:**
+```bash
+npm run dist
+# Creates installers in electron/dist/
+```
+
+### Option 2: JavaFX GUI (Legacy)
+
+Traditional desktop interface using Java Swing/JavaFX.
+
+```bash
+# Build and run
 mvn clean compile
-
-# Run the Grok-themed control station
 mvn javafx:run
 ```
 
-### 2. ESP32 Robot Configuration
-1. **Flash ESP32 firmware** with WATCHTOWER network credentials
-2. **Power on robots** - they will auto-connect to WATCHTOWER network
-3. **Note robot IP addresses** for manual addition to control station
+### Option 3: 3D Simulator
 
-### 3. System Operation
-1. **Connect to WATCHTOWER Network** on your host computer
-2. **Launch Control Station** - enjoy the Grok-inspired interface
-3. **Add Robots Manually** using name and IP address
-4. **Connect USB Controllers** - they will be auto-detected
-5. **Pair Controllers** with robots using the interface
-6. **Enable Teleop Mode** to start robot control
+Lightweight robot simulator for testing without hardware.
 
-## 🎨 Grok-Inspired Design
+```bash
+# Compile
+mvn clean compile assembly:single
 
-### Color Palette
-- **Primary Background**: Deep Black (#0A0A0A) for cosmic feel
-- **Surface Colors**: Soft Grays (#1A1A1A, #2A2F36) for cards
-- **Text**: High-contrast White/Off-white (#FFFFFF, #EDEDED)
-- **Accents**: Blue (#1D9BF0), Green (#22C55E), Yellow (#EAB308), Red (#EF4444)
+# Run simulator
+java -cp target/robotics-control-system-1.0.0-jar-with-dependencies.jar \
+  com.soccerbots.control.simulator.SimulatorApp
+```
 
-### Typography
-- **Font Family**: Inter, SF Pro Display, Roboto, system fonts
-- **Sizes**: 14px body, 16px labels, 24px titles
-- **Weight**: 400 regular, 500 medium, 600 semi-bold
-- **Letter Spacing**: Slight negative (-0.06em) for modern look
+### Option 4: Headless API Mode
 
-### UI Components
-- **Pill-Shaped Buttons**: Rounded with hover scaling (1.02x)
-- **Card-Based Layout**: Subtle shadows and clean borders
-- **Status Indicators**: Color-coded circles with drop shadows
-- **Smooth Animations**: Fade and scale transitions throughout
+Run backend with HTTP REST API + WebSocket for custom frontends.
+
+```bash
+# Build backend
+mvn clean compile assembly:single
+
+# Run headless (API on port 8080)
+java -cp target/robotics-control-system-1.0.0-jar-with-dependencies.jar \
+  com.soccerbots.control.HeadlessLauncher
+```
+
+## 🎨 Native Desktop App Features
+
+### Modern React UI
+- **Robot Connection Panel** - Manage multiple robots, view status and signal strength
+- **Network Analysis** - Real-time latency and bandwidth charts
+- **Control Panel** - Emergency stop, system controls
+- **Terminal Monitor** - Live command output and system logs
+- **Service Log** - Event tracking with timestamps and severity levels
+
+### Backend API
+- **REST API** - Full robot/controller/network management
+- **WebSocket** - Real-time updates and event streaming
+- **Auto-Discovery** - Finds robots on network via UDP broadcast
+- **Controller Support** - Automatic USB controller detection via JInput
+
+### Real-Time Features
+- Live robot status updates
+- Network performance monitoring
+- Instant emergency stop
+- Controller input visualization
+- System event logging
 
 ## 📁 Project Structure
 
 ```
 SoccerBotsSoftwareJava/
 ├── src/main/java/com/soccerbots/control/
-│   ├── RoboticsControlFXApp.java        # JavaFX application entry point
-│   ├── gui/                             # Grok-themed UI components
-│   │   ├── MainWindow.java              # Main window with header navigation
-│   │   ├── RobotPanel.java              # ESP32 robot management
-│   │   ├── ControllerPanel.java         # USB controller management
-│   │   ├── NetworkPanel.java            # WATCHTOWER network status
-│   │   ├── MonitoringPanel.java         # System monitoring
-│   │   └── SettingsPanel.java           # Application settings
-│   ├── network/                         # ESP32 network communication
-│   │   └── NetworkManager.java          # UDP binary protocol handler
-│   ├── robot/                           # ESP32 robot management
-│   │   ├── RobotManager.java            # Robot discovery and control
-│   │   ├── Robot.java                   # Robot data model
-│   │   └── ESP32Command.java            # Binary command structure
-│   └── controller/                      # Controller input processing
-│       ├── ControllerManager.java       # USB controller handling
-│       ├── GameController.java          # Controller abstraction
-│       └── ControllerInput.java         # Input normalization
-├── src/main/resources/
-│   └── styles/
-│       └── grok.css                     # Grok AI-inspired theme
-├── esp32_robot_code/                    # ESP32 firmware (provided)
-├── docs/                                # Project documentation
-├── pom.xml                              # Maven build with JavaFX
-└── README.md                            # This file
+│   ├── api/                          # HTTP REST API & WebSocket
+│   │   └── ApiServer.java            # Javalin server with endpoints
+│   ├── controller/                   # Game controller input
+│   │   ├── ControllerManager.java    # USB controller handling
+│   │   ├── GameController.java       # Controller abstraction
+│   │   └── ControllerInput.java      # Input normalization
+│   ├── network/                      # WiFi and UDP networking
+│   │   └── NetworkManager.java       # WiFi hosting, UDP comm
+│   ├── robot/                        # Robot management
+│   │   ├── RobotManager.java         # Discovery, pairing, commands
+│   │   ├── Robot.java                # Robot data model
+│   │   └── RobotCommand.java         # JSON command structure
+│   ├── gui/                          # JavaFX GUI (legacy)
+│   │   ├── MainWindow.java           # Main window
+│   │   ├── RobotPanel.java           # Robot management
+│   │   ├── ControllerPanel.java      # Controller pairing
+│   │   └── NetworkPanel.java         # Network status
+│   ├── simulator/                    # 3D Robot Simulator
+│   │   ├── SimulatorApp.java         # Main simulator window
+│   │   ├── SimulatorRenderer.java    # 3D rendering
+│   │   ├── SimulatorWorld.java       # Physics world
+│   │   └── SimulatedRobot.java       # Robot physics
+│   ├── HeadlessLauncher.java         # API mode entry point
+│   ├── Launcher.java                 # JavaFX GUI launcher
+│   └── RoboticsControlApp.java       # Swing GUI launcher
+├── frontend/                         # React + TypeScript UI
+│   ├── src/
+│   │   ├── components/               # React components
+│   │   │   ├── ConnectionPanel.tsx   # Robot connections
+│   │   │   ├── NetworkAnalysis.tsx   # Charts
+│   │   │   ├── ControlPanel.tsx      # Emergency stop
+│   │   │   ├── ServiceLog.tsx        # Event log
+│   │   │   └── TerminalMonitor.tsx   # Terminal output
+│   │   ├── services/
+│   │   │   └── api.ts                # Backend API client
+│   │   ├── App.tsx                   # Main app component
+│   │   └── main.tsx                  # Entry point
+│   ├── package.json
+│   └── vite.config.ts
+├── electron/                         # Electron wrapper
+│   ├── main.js                       # Main process (launches Java)
+│   ├── preload.js                    # Context bridge
+│   └── package.json
+├── esp32_robot_firmware/             # ESP32 Arduino firmware
+├── package.json                      # Root build scripts
+├── pom.xml                           # Maven configuration
+├── README.md                         # This file
+└── ELECTRON_APP_README.md            # Detailed Electron app guide
 ```
 
-## 🔧 ESP32 Communication Protocol
+## 🔌 Backend API Reference
 
-### Binary Packet Structure (24 bytes)
-```
-Bytes 0-15:  Robot name (null-padded string)
-Bytes 16-19: Stick axes (leftX, leftY, rightX, rightY) [0-255]
-Bytes 20-21: Unused axes (reserved)
-Bytes 22:    Button data (cross, circle, square, triangle)
-Bytes 23:    Unused buttons (reserved)
-```
+### REST Endpoints (Port 8080)
 
-### Controller to ESP32 Mapping
-- **Left Stick**: Forward/backward and sideways movement
-- **Right Stick**: Rotation and unused axis
-- **Buttons**: PlayStation-style (Cross, Circle, Square, Triangle)
-- **Values**: Normalized to 0-255 range with center points
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | Health check |
+| GET | `/api/robots` | List all robots |
+| GET | `/api/robots/{id}` | Get robot details |
+| POST | `/api/robots/{id}/connect` | Connect to robot |
+| POST | `/api/robots/{id}/disconnect` | Disconnect robot |
+| POST | `/api/robots/{id}/enable` | Enable robot |
+| POST | `/api/robots/{id}/disable` | Disable robot |
+| POST | `/api/robots/refresh` | Scan for robots |
+| GET | `/api/controllers` | List controllers |
+| POST | `/api/emergency-stop` | Activate emergency stop |
+| POST | `/api/emergency-stop/deactivate` | Deactivate emergency stop |
+| GET | `/api/network/stats` | Network statistics |
 
-## 🎮 Interface Guide
+### WebSocket (ws://localhost:8080/ws)
 
-### Main Navigation
-- **Robots** - Add and manage ESP32 robots
-- **Controllers** - View and pair USB controllers
-- **Network** - Monitor WATCHTOWER network status
-- **Monitoring** - System performance and status
-- **Settings** - Application configuration
+Real-time events:
+- `robot_connected` - Robot connected
+- `robot_disconnected` - Robot disconnected
+- `emergency_stop` - Emergency stop state changed
+- `robot_enabled` / `robot_disabled` - Robot state changed
 
-### Robot Management
-1. **Network Status** - Shows WATCHTOWER connection
-2. **Add Robot** - Manual entry with name and IP
-3. **Robot Cards** - Live status with action buttons
-4. **Teleop Control** - Enable/disable robot movement
+## 🌐 Robot Communication Protocol
 
-### Controller Operations
-- **Auto-Detection** - USB controllers appear automatically
-- **Pairing** - Assign controllers to specific robots
-- **Real-time Input** - Live stick and button monitoring
-- **Emergency Stop** - Immediate halt for all robots
+### Discovery Protocol (UDP Port 12345)
+- **Broadcast**: Host sends discovery requests
+- **Response**: Robots reply with ID and IP address
 
-## 🌐 Network Architecture
+### Command Protocol (UDP Port 12346)
+- **Format**: JSON with movement commands
+- **Example**:
+  ```json
+  {
+    "command": "move",
+    "forward": 0.5,
+    "sideways": 0.0,
+    "rotation": 0.2
+  }
+  ```
 
-### WATCHTOWER Network
-- **Purpose**: Dedicated ESP32 robot communication
-- **Protocol**: UDP port 2367 for binary commands
-- **Discovery**: Manual robot addition by IP address
-- **Security**: Network-level access control
+### Controller Mapping
+- **Left Stick**: Forward/sideways movement
+- **Right Stick X**: Rotation
+- **Values**: Normalized -1.0 to 1.0
 
-### Data Flow
-1. **Controller Input** → ControllerManager (60Hz polling)
-2. **Input Processing** → ESP32Command binary conversion
-3. **Network Transmission** → UDP to robot IP:2367
-4. **Robot Execution** → Movement command processing
+## 🎮 Using the Native Desktop App
 
-## 📚 Documentation
-
-### Complete Guides
-- **[Project Structure](PROJECT_STRUCTURE.md)** - Detailed file explanations
-- **[User Manual](USER_MANUAL.md)** - Complete operational guide
-- **[Installation Guide](INSTALLATION_GUIDE.md)** - Setup instructions
-
-### Key Topics
-- Grok theme customization and CSS variables
-- ESP32 binary protocol implementation
-- JavaFX application architecture
-- Controller input processing and mapping
-- Network configuration and troubleshooting
-
-## 🎮 Usage Examples
-
-### Basic Robot Control
-```java
-// Add robot manually
-Robot robot = robotManager.addRobot("MyRobot", "192.168.1.100");
-
-// Send controller input (normalized -1.0 to 1.0)
-robotManager.sendMovementCommand(
-    "MyRobot",
-    leftStickX, leftStickY,
-    rightStickX, rightStickY
-);
-
-// Enable teleop mode
-robotManager.startTeleop();
-
-// Emergency stop all robots
-robotManager.emergencyStopAll();
+### 1. Launch Application
+```bash
+npm start
 ```
 
-### ESP32 Binary Command
-```java
-// Create command for ESP32
-ESP32Command cmd = ESP32Command.fromControllerInput(
-    "MyRobot",
-    0.5,  // leftStickX
-    -0.3, // leftStickY
-    0.0,  // rightStickX
-    0.8,  // rightStickY
-    true, false, false, false // buttons
-);
+### 2. Scan for Robots
+- Click **Refresh** in the Robot Connections panel
+- Robots on your network will appear automatically
 
-// Send via UDP to robot
-networkManager.sendRobotCommand(robotName, robotIP,
-    cmd.getLeftX(), cmd.getLeftY(),
-    cmd.getRightX(), cmd.getRightY(),
-    cmd.isCross(), cmd.isCircle(),
-    cmd.isSquare(), cmd.isTriangle());
-```
+### 3. Connect to Robots
+- Click **Connect** on any discovered robot
+- Status indicator will turn green when connected
+
+### 4. Attach Controllers
+- Plug in USB game controller
+- Controllers appear automatically in the interface
+- Input is sent to paired robots in real-time
+
+### 5. Emergency Stop
+- Red **Emergency Stop** button in Control Panel
+- Instantly halts all robot operations
+- Click again to resume
+
+### 6. Monitor System
+- **Network Analysis**: View latency and bandwidth charts
+- **Terminal Monitor**: See real-time system commands
+- **Service Log**: Track all events with timestamps
 
 ## 🔧 Development
 
-### Building from Source
+### Project Setup
 ```bash
-# Compile with JavaFX dependencies
-mvn clean compile
+# Install frontend & electron dependencies
+npm run install:all
 
-# Run the application
+# Build Java backend
+mvn clean compile assembly:single
+```
+
+### Running in Development
+
+**Electron App (Hot Reload):**
+```bash
+# Terminal 1: Backend API
+npm run dev:backend
+
+# Terminal 2: Frontend (Vite)
+npm run dev:frontend
+
+# Terminal 3: Electron
+npm run dev:electron
+```
+
+**JavaFX GUI:**
+```bash
 mvn javafx:run
-
-# Run with debug logging
-mvn javafx:run -Djavafx.args="-Dlogging.level.com.soccerbots=DEBUG"
-
-# Clean build
-mvn clean
 ```
 
-### Customizing Grok Theme
-Edit `src/main/resources/styles/grok.css`:
-```css
-.root {
-    /* Customize colors */
-    -primary-bg: #0A0A0A;
-    -accent-blue: #1D9BF0;
-    -success-green: #22C55E;
-
-    /* Adjust fonts */
-    -font-family: "Your-Font", system-ui;
-    -font-size-body: 14px;
-}
+**3D Simulator:**
+```bash
+mvn exec:java -Dexec.mainClass="com.soccerbots.control.simulator.SimulatorApp"
 ```
 
-### Adding New Features
-1. **UI Components**: Use Grok CSS classes (.grok-button, .grok-card, etc.)
-2. **Robot Commands**: Extend ESP32Command for new functionality
-3. **Controller Mappings**: Modify ControllerInput processing
-4. **Network Protocols**: Update NetworkManager for new communication
+### Building for Distribution
+
+**Electron App:**
+```bash
+npm run dist
+# Output: electron/dist/ (platform-specific installers)
+```
+
+**Standalone JAR:**
+```bash
+mvn clean compile assembly:single
+# Output: target/robotics-control-system-1.0.0-jar-with-dependencies.jar
+```
 
 ## 🐛 Troubleshooting
 
-### Common Issues
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Interface appears broken | Missing CSS | Check grok.css is in classpath |
-| No robots found | Network connection | Verify WATCHTOWER network connection |
-| Controller not working | Driver issues | Install controller drivers, check USB |
-| Robot not responding | IP/Network | Verify robot IP and WATCHTOWER connection |
-| Animation stuttering | Performance | Reduce animation complexity or disable |
+### Native Desktop App
 
-### Network Diagnostics
+**Backend won't start:**
+- Ensure Java 17+ installed: `java -version`
+- Check port 8080 is available
+- View logs in Electron DevTools console
+
+**Frontend won't load:**
+- Check `frontend/dist/` exists after build
+- In dev mode, verify Vite server on port 5173
+- Open DevTools to see errors (Ctrl+Shift+I)
+
+**WebSocket connection failed:**
+- Backend must start before frontend
+- Check backend console for "API server running"
+- Verify `frontend/src/services/api.ts` API URL
+
+### Controllers Not Detected
+
+- Install JInput native libraries (automatic with Maven)
+- Windows: Ensure DirectInput drivers installed
+- Try refreshing controller list in app
+- Check USB connection and permissions
+
+### Robots Not Discovered
+
+- Ensure robots and host on same WiFi network
+- Check firewall allows UDP ports 12345-12346
+- Verify ESP32 firmware running and configured
+- Try manual refresh in UI
+
+### Build Issues
+
+**Maven errors:**
 ```bash
-# Test UDP communication
-ping 192.168.1.100
-
-# Check network interface
-ipconfig /all
-
-# Verify WATCHTOWER connection
-netsh wlan show interfaces
+# Clean and rebuild
+mvn clean
+mvn compile
 ```
 
-## 🤝 Contributing
+**npm errors:**
+```bash
+# Clear cache and reinstall
+cd frontend && rm -rf node_modules package-lock.json && npm install
+cd ../electron && rm -rf node_modules package-lock.json && npm install
+```
 
-### Development Setup
-1. Fork the repository
-2. Ensure Java 17+ with JavaFX support
-3. Import as Maven project
-4. Run `mvn clean compile` to verify setup
-5. Make changes and test with Grok theme
+## 📚 Additional Documentation
 
-### Code Guidelines
-- Follow existing Grok theme patterns
-- Use CSS variables for consistent styling
-- Maintain 150-200ms animation timing
-- Test with different screen sizes
-- Update documentation for UI changes
+- **[ELECTRON_APP_README.md](ELECTRON_APP_README.md)** - Detailed Electron app guide
+- **[INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md)** - Setup instructions
+- **[USER_MANUAL.md](USER_MANUAL.md)** - Complete operational guide
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - File-by-file explanations
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 🙏 Acknowledgments
 
-- **Grok AI** for design inspiration and aesthetic guidelines
-- **JavaFX Community** for modern UI framework support
-- **ESP32 Community** for excellent documentation and examples
-- **JInput Library** for controller support
-- **Inter Font Family** for beautiful typography
+- **Figma Community** - RobotControlDesktopApp design template
+- **React & Electron** - Modern desktop framework
+- **JavaFX & Swing** - Classic Java UI frameworks
+- **JInput Library** - Game controller support
+- **Jackson & Javalin** - JSON processing and web framework
+- **ESP32 Community** - Excellent hardware documentation
 
 ## 📞 Support
 
-### Getting Help
-- **Documentation**: Check User Manual and Project Structure guide
-- **Issues**: Report bugs with screenshots of Grok interface
-- **Community**: Join the SoccerBots development community
-- **Theme Issues**: Include CSS and JavaFX version details
+### Quick Reference
 
-### Version History
-- **v1.0.0** - Grok-themed JavaFX release
-  - Modern dark-mode interface with Grok AI aesthetics
-  - ESP32-specific binary communication protocol
-  - Manual robot addition and management
-  - Real-time controller input with smooth animations
-  - Professional typography and responsive design
+| Task | Command |
+|------|---------|
+| Run native app | `npm start` |
+| Run JavaFX GUI | `mvn javafx:run` |
+| Run simulator | `java -cp target/*-jar-with-dependencies.jar com.soccerbots.control.simulator.SimulatorApp` |
+| Build everything | `npm run build:all` |
+| Development mode | See "Running in Development" section |
 
 ---
 
-**Built with modern JavaFX and inspired by Grok AI design principles ✨**
+**Choose your interface: Modern React UI, Classic JavaFX, or Lightweight Simulator** ✨
