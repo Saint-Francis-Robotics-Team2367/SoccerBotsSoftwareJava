@@ -9,10 +9,13 @@
 
 ### First Time Setup
 
-1. Install all dependencies:
+**IMPORTANT:** Before running the application for the first time, install all dependencies:
+
 ```bash
 npm run install:all
 ```
+
+This installs dependencies for both the frontend and the Electron app.
 
 ### Run the Application (Single Command!)
 
