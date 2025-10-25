@@ -16,9 +16,10 @@ public class ControllerManager {
     private final RobotManager robotManager;
     private final Map<String, GameController> connectedControllers;
     private final Map<String, String> controllerRobotPairings;
+    private final Map<String, Boolean> controllerEnabled; // Track enabled/disabled state
     private final ExecutorService executorService;
     private final ScheduledExecutorService scheduledExecutor;
-    
+
     private boolean isPolling = false;
     private volatile boolean emergencyStopActive = false;
     
@@ -26,9 +27,10 @@ public class ControllerManager {
         this.robotManager = robotManager;
         this.connectedControllers = new ConcurrentHashMap<>();
         this.controllerRobotPairings = new ConcurrentHashMap<>();
+        this.controllerEnabled = new ConcurrentHashMap<>();
         this.executorService = Executors.newCachedThreadPool();
         this.scheduledExecutor = Executors.newScheduledThreadPool(2);
-        
+
         startControllerDetection();
         startInputPolling();
     }
@@ -72,6 +74,7 @@ public class ControllerManager {
                 logger.debug("Found controller: {} (Type: {})", controller.getName(), controller.getType());
 
                 // Check for game controllers, joysticks, and generic gamepads
+                // Includes PS4, PS5 DualSense, Xbox controllers
                 if (controller.getType() == Controller.Type.GAMEPAD ||
                     controller.getType() == Controller.Type.STICK ||
                     controller.getType() == Controller.Type.FINGERSTICK ||
@@ -81,6 +84,10 @@ public class ControllerManager {
                         controller.getName().toLowerCase().contains("controller") ||
                         controller.getName().toLowerCase().contains("xbox") ||
                         controller.getName().toLowerCase().contains("playstation") ||
+                        controller.getName().toLowerCase().contains("dualsense") ||
+                        controller.getName().toLowerCase().contains("dualshock") ||
+                        controller.getName().toLowerCase().contains("ps4") ||
+                        controller.getName().toLowerCase().contains("ps5") ||
                         controller.getName().toLowerCase().contains("ps")))) {
 
                     // Test if we can poll the controller
@@ -99,6 +106,7 @@ public class ControllerManager {
                     if (!connectedControllers.containsKey(controllerId)) {
                         GameController gameController = new GameController(controllerId, controller);
                         connectedControllers.put(controllerId, gameController);
+                        controllerEnabled.putIfAbsent(controllerId, true); // Enable by default
                         logger.info("Detected new controller: {} (Type: {})", controller.getName(), controller.getType());
                     }
                 }
@@ -150,10 +158,16 @@ public class ControllerManager {
                 if (!controller.poll()) {
                     continue;
                 }
-                
+
+                // Check if controller is enabled
+                Boolean enabled = controllerEnabled.get(gameController.getId());
+                if (enabled == null || !enabled) {
+                    continue; // Skip disabled controllers
+                }
+
                 ControllerInput input = readControllerInput(controller);
                 gameController.updateInput(input);
-                
+
                 String pairedRobotId = controllerRobotPairings.get(gameController.getId());
                 if (pairedRobotId != null && !emergencyStopActive && input.hasMovement()) {
                     robotManager.sendMovementCommand(
@@ -166,7 +180,7 @@ public class ControllerManager {
                 } else if (pairedRobotId != null && !emergencyStopActive && input.isStopCommand()) {
                     robotManager.sendStopCommand(pairedRobotId);
                 }
-                
+
             } catch (Exception e) {
                 logger.error("Error polling controller input", e);
             }
@@ -266,7 +280,32 @@ public class ControllerManager {
     public Map<String, String> getAllPairings() {
         return new ConcurrentHashMap<>(controllerRobotPairings);
     }
-    
+
+    public void enableController(String controllerId) {
+        if (connectedControllers.containsKey(controllerId)) {
+            controllerEnabled.put(controllerId, true);
+            logger.info("Enabled controller: {}", controllerId);
+        }
+    }
+
+    public void disableController(String controllerId) {
+        if (connectedControllers.containsKey(controllerId)) {
+            controllerEnabled.put(controllerId, false);
+            logger.info("Disabled controller: {}", controllerId);
+
+            // Stop robot if it was paired
+            String robotId = controllerRobotPairings.get(controllerId);
+            if (robotId != null) {
+                robotManager.sendStopCommand(robotId);
+            }
+        }
+    }
+
+    public boolean isControllerEnabled(String controllerId) {
+        Boolean enabled = controllerEnabled.get(controllerId);
+        return enabled == null || enabled; // Default to enabled
+    }
+
     public void stopPolling() {
         isPolling = false;
     }

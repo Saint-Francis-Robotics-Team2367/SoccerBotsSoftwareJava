@@ -5,11 +5,13 @@ const API_BASE_URL = (window as any).electron?.apiUrl || 'http://localhost:8080'
 export interface Robot {
   id: string;
   name: string;
-  status: "connected" | "disconnected" | "connecting";
+  status: "connected" | "disconnected" | "connecting" | "discovered";
   ipAddress: string;
   signal?: number;
   disabled?: boolean;
   pairedControllerId?: string;
+  lastCommandTime?: number;
+  receiving?: boolean; // Real-time activity indicator
 }
 
 export interface Controller {
@@ -17,6 +19,8 @@ export interface Controller {
   name: string;
   connected: boolean;
   pairedRobotId?: string;
+  enabled?: boolean;
+  type?: string; // "ps4", "ps5", "xbox", etc.
 }
 
 export interface NetworkStats {
@@ -253,6 +257,31 @@ class ApiService {
     await fetch(`${API_BASE_URL}/api/match/duration`, {
       method: 'POST',
       body: durationSeconds.toString()
+    });
+  }
+
+  // Controller pairing methods
+  async pairController(controllerId: string, robotId: string): Promise<void> {
+    await fetch(`${API_BASE_URL}/api/controllers/${controllerId}/pair/${robotId}`, {
+      method: 'POST'
+    });
+  }
+
+  async unpairController(controllerId: string): Promise<void> {
+    await fetch(`${API_BASE_URL}/api/controllers/${controllerId}/unpair`, {
+      method: 'POST'
+    });
+  }
+
+  async enableController(controllerId: string): Promise<void> {
+    await fetch(`${API_BASE_URL}/api/controllers/${controllerId}/enable`, {
+      method: 'POST'
+    });
+  }
+
+  async disableController(controllerId: string): Promise<void> {
+    await fetch(`${API_BASE_URL}/api/controllers/${controllerId}/disable`, {
+      method: 'POST'
     });
   }
 }

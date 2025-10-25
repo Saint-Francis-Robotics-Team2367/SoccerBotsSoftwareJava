@@ -53,10 +53,25 @@ public class GameController {
     public long getTimeSinceLastUpdate() {
         return System.currentTimeMillis() - lastUpdateTime;
     }
-    
+
+    public String getType() {
+        String name = controller.getName().toLowerCase();
+        if (name.contains("dualsense") || name.contains("ps5")) {
+            return "ps5";
+        } else if (name.contains("dualshock") || name.contains("ps4")) {
+            return "ps4";
+        } else if (name.contains("xbox")) {
+            return "xbox";
+        } else if (name.contains("playstation")) {
+            return "playstation";
+        } else {
+            return "gamepad";
+        }
+    }
+
     @Override
     public String toString() {
-        return String.format("GameController{id='%s', name='%s', connected=%s}", 
+        return String.format("GameController{id='%s', name='%s', connected=%s}",
                            id, getName(), isConnected());
     }
 }

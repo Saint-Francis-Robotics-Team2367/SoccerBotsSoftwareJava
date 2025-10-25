@@ -81,6 +81,12 @@ public class ApiServer {
         // Get all controllers
         app.get("/api/controllers", this::getControllers);
 
+        // Controller pairing
+        app.post("/api/controllers/{controllerId}/pair/{robotId}", this::pairController);
+        app.post("/api/controllers/{controllerId}/unpair", this::unpairController);
+        app.post("/api/controllers/{controllerId}/enable", this::enableController);
+        app.post("/api/controllers/{controllerId}/disable", this::disableController);
+
         // Emergency stop
         app.post("/api/emergency-stop", this::emergencyStop);
         app.post("/api/emergency-stop/deactivate", this::deactivateEmergencyStop);
@@ -218,10 +224,60 @@ public class ApiServer {
             controllerData.put("name", controller.getName());
             controllerData.put("connected", controller.isConnected());
             controllerData.put("pairedRobotId", controllerManager.getPairedRobotId(controller.getId()));
+            controllerData.put("enabled", controllerManager.isControllerEnabled(controller.getId()));
+            controllerData.put("type", controller.getType());
             controllersList.add(controllerData);
         }
 
         ctx.json(controllersList);
+    }
+
+    private void pairController(Context ctx) {
+        String controllerId = ctx.pathParam("controllerId");
+        String robotId = ctx.pathParam("robotId");
+
+        controllerManager.pairControllerWithRobot(controllerId, robotId);
+        ctx.json(Map.of(
+            "success", true,
+            "message", "Controller paired with robot"
+        ));
+        broadcastUpdate("controller_paired", Map.of(
+            "controllerId", controllerId,
+            "robotId", robotId
+        ));
+    }
+
+    private void unpairController(Context ctx) {
+        String controllerId = ctx.pathParam("controllerId");
+
+        controllerManager.unpairController(controllerId);
+        ctx.json(Map.of(
+            "success", true,
+            "message", "Controller unpaired"
+        ));
+        broadcastUpdate("controller_unpaired", Map.of("controllerId", controllerId));
+    }
+
+    private void enableController(Context ctx) {
+        String controllerId = ctx.pathParam("controllerId");
+
+        controllerManager.enableController(controllerId);
+        ctx.json(Map.of(
+            "success", true,
+            "message", "Controller enabled"
+        ));
+        broadcastUpdate("controller_enabled", Map.of("controllerId", controllerId));
+    }
+
+    private void disableController(Context ctx) {
+        String controllerId = ctx.pathParam("controllerId");
+
+        controllerManager.disableController(controllerId);
+        ctx.json(Map.of(
+            "success", true,
+            "message", "Controller disabled"
+        ));
+        broadcastUpdate("controller_disabled", Map.of("controllerId", controllerId));
     }
 
     private void emergencyStop(Context ctx) {

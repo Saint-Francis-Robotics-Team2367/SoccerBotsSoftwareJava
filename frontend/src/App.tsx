@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { ConnectionPanel } from "./components/ConnectionPanel";
+import { ControllersPanel } from "./components/ControllersPanel";
 import { NetworkAnalysis } from "./components/NetworkAnalysis";
 import { ControlPanel } from "./components/ControlPanel";
 import { ServiceLog } from "./components/ServiceLog";
 import { TerminalMonitor } from "./components/TerminalMonitor";
 import { Activity } from "lucide-react";
 import { toast, Toaster } from "sonner";
-import { apiService, Robot, LogEntry } from "./services/api";
+import { apiService, Robot, Controller, LogEntry } from "./services/api";
 
 export default function App() {
   const [robots, setRobots] = useState<Robot[]>([]);
+  const [controllers, setControllers] = useState<Controller[]>([]);
+  const [selectedRobots, setSelectedRobots] = useState<string[]>([]);
   const [networkData, setNetworkData] = useState<any[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [terminalLines, setTerminalLines] = useState<string[]>([
@@ -51,6 +54,7 @@ export default function App() {
 
     // Initial data fetch
     fetchRobots();
+    fetchControllers();
     startNetworkPolling();
 
     return () => {
@@ -73,6 +77,17 @@ export default function App() {
     } catch (error) {
       console.error("[App] Failed to fetch robots:", error);
       addTerminalLine("$ Error: Failed to fetch robot list");
+    }
+  };
+
+  const fetchControllers = async () => {
+    try {
+      const controllersData = await apiService.getControllers();
+      setControllers(controllersData);
+      console.log("[App] Fetched controllers:", controllersData);
+    } catch (error) {
+      console.error("[App] Failed to fetch controllers:", error);
+      addTerminalLine("$ Error: Failed to fetch controller list");
     }
   };
 
@@ -205,6 +220,62 @@ export default function App() {
     setTerminalLines((prev) => [...prev, "$ Service log cleared"]);
   };
 
+  const handleToggleRobotSelection = (id: string) => {
+    setSelectedRobots((prev) =>
+      prev.includes(id) ? prev.filter((robotId) => robotId !== id) : [...prev, id]
+    );
+  };
+
+  const handlePairController = async (controllerId: string, robotId: string) => {
+    try {
+      await apiService.pairController(controllerId, robotId);
+      toast.success("Controller paired successfully");
+      addTerminalLine(`$ Paired controller to robot`);
+      await fetchControllers();
+      await fetchRobots();
+    } catch (error) {
+      console.error("[App] Failed to pair controller:", error);
+      toast.error("Failed to pair controller");
+    }
+  };
+
+  const handleUnpairController = async (controllerId: string) => {
+    try {
+      await apiService.unpairController(controllerId);
+      toast.success("Controller unpaired");
+      addTerminalLine(`$ Unpaired controller`);
+      await fetchControllers();
+      await fetchRobots();
+    } catch (error) {
+      console.error("[App] Failed to unpair controller:", error);
+      toast.error("Failed to unpair controller");
+    }
+  };
+
+  const handleEnableController = async (controllerId: string) => {
+    try {
+      await apiService.enableController(controllerId);
+      toast.success("Controller enabled");
+      addTerminalLine(`$ Controller enabled`);
+      await fetchControllers();
+    } catch (error) {
+      console.error("[App] Failed to enable controller:", error);
+      toast.error("Failed to enable controller");
+    }
+  };
+
+  const handleDisableController = async (controllerId: string) => {
+    try {
+      await apiService.disableController(controllerId);
+      toast.info("Controller disabled");
+      addTerminalLine(`$ Controller disabled`);
+      await fetchControllers();
+    } catch (error) {
+      console.error("[App] Failed to disable controller:", error);
+      toast.error("Failed to disable controller");
+    }
+  };
+
   return (
     <div className="min-h-screen p-6">
       <Toaster position="top-right" theme="dark" />
@@ -232,9 +303,28 @@ export default function App() {
 
       {/* Main Grid */}
       <div className="grid grid-cols-12 gap-6">
-        {/* Left Column - Connection Panel */}
-        <div className="col-span-3 h-[calc(100vh-180px)] min-h-0">
-          <ConnectionPanel robots={robots} onConnect={handleConnect} onRefresh={handleRefresh} onDisable={handleDisable} />
+        {/* Left Column - Robots & Controllers */}
+        <div className="col-span-3 h-[calc(100vh-180px)] min-h-0 flex flex-col gap-6">
+          <div className="flex-1 min-h-0">
+            <ConnectionPanel
+              robots={robots}
+              selectedRobots={selectedRobots}
+              onConnect={handleConnect}
+              onRefresh={handleRefresh}
+              onDisable={handleDisable}
+              onToggleSelection={handleToggleRobotSelection}
+            />
+          </div>
+          <div className="h-64 min-h-0">
+            <ControllersPanel
+              controllers={controllers}
+              robots={robots.map((r) => ({ id: r.id, name: r.name }))}
+              onPair={handlePairController}
+              onUnpair={handleUnpairController}
+              onEnable={handleEnableController}
+              onDisable={handleDisableController}
+            />
+          </div>
         </div>
 
         {/* Center Column */}
