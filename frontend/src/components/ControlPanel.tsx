@@ -1,6 +1,8 @@
 import { AlertTriangle, Play, Pause, RotateCcw } from "lucide-react";
 import { Button } from "./ui/button";
 import { useState, useEffect } from "react";
+import { apiService } from "../services/api";
+import { toast } from "sonner";
 
 interface ControlPanelProps {
   onEmergencyStop: () => void;
@@ -8,18 +10,50 @@ interface ControlPanelProps {
 }
 
 export function ControlPanel({ onEmergencyStop, emergencyActive }: ControlPanelProps) {
-  const [time, setTime] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState(120); // Default 2 minutes
   const [isRunning, setIsRunning] = useState(false);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isRunning) {
-      interval = setInterval(() => {
-        setTime((prev) => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isRunning]);
+    // Subscribe to timer updates from backend
+    const unsubTimerUpdate = apiService.on("timer_update", (data) => {
+      setTimeRemaining(data.timeRemainingSeconds);
+      setIsRunning(data.running);
+    });
+
+    const unsubMatchStart = apiService.on("match_start", () => {
+      setIsRunning(true);
+      toast.success("Match started!");
+    });
+
+    const unsubMatchStop = apiService.on("match_stop", () => {
+      setIsRunning(false);
+      toast.info("Match stopped");
+    });
+
+    const unsubMatchEnd = apiService.on("match_end", () => {
+      setIsRunning(false);
+      toast.warning("Match ended - time expired!");
+    });
+
+    const unsubMatchReset = apiService.on("match_reset", () => {
+      setIsRunning(false);
+      toast.info("Match reset");
+    });
+
+    // Fetch initial timer state
+    apiService.getMatchTimer().then(timer => {
+      setTimeRemaining(timer.timeRemainingSeconds);
+      setIsRunning(timer.running);
+    });
+
+    return () => {
+      unsubTimerUpdate();
+      unsubMatchStart();
+      unsubMatchStop();
+      unsubMatchEnd();
+      unsubMatchReset();
+    };
+  }, []);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -27,9 +61,26 @@ export function ControlPanel({ onEmergencyStop, emergencyActive }: ControlPanelP
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleReset = () => {
-    setTime(0);
-    setIsRunning(false);
+  const handleStartStop = async () => {
+    try {
+      if (isRunning) {
+        await apiService.stopMatch();
+      } else {
+        await apiService.startMatch();
+      }
+    } catch (error) {
+      console.error("Failed to toggle match:", error);
+      toast.error("Failed to toggle match");
+    }
+  };
+
+  const handleReset = async () => {
+    try {
+      await apiService.resetMatch();
+    } catch (error) {
+      console.error("Failed to reset match:", error);
+      toast.error("Failed to reset match");
+    }
   };
 
   return (
@@ -41,12 +92,12 @@ export function ControlPanel({ onEmergencyStop, emergencyActive }: ControlPanelP
       <div className="backdrop-blur-sm bg-white/5 border border-white/10 rounded-lg p-4">
         <div className="text-center mb-3">
           <div className="text-sm text-gray-300 mb-2">Match Timer</div>
-          <div className="text-4xl font-mono text-cyan-400">{formatTime(time)}</div>
+          <div className="text-4xl font-mono text-cyan-400">{formatTime(timeRemaining)}</div>
         </div>
         <div className="flex gap-2">
           <Button
             size="sm"
-            onClick={() => setIsRunning(!isRunning)}
+            onClick={handleStartStop}
             className="flex-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/50"
           >
             {isRunning ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}

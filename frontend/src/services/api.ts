@@ -33,6 +33,13 @@ export interface LogEntry {
   message: string;
 }
 
+export interface MatchTimer {
+  running: boolean;
+  timeRemainingMs: number;
+  durationMs: number;
+  timeRemainingSeconds: number;
+}
+
 class ApiService {
   private ws: WebSocket | null = null;
   private wsCallbacks: Map<string, Set<(data: any) => void>> = new Map();
@@ -216,6 +223,37 @@ class ApiService {
   async getNetworkStats(): Promise<NetworkStats> {
     const response = await fetch(`${API_BASE_URL}/api/network/stats`);
     return response.json();
+  }
+
+  // Match timer methods
+  async getMatchTimer(): Promise<MatchTimer> {
+    const response = await fetch(`${API_BASE_URL}/api/match/timer`);
+    return response.json();
+  }
+
+  async startMatch(): Promise<void> {
+    await fetch(`${API_BASE_URL}/api/match/start`, {
+      method: 'POST'
+    });
+  }
+
+  async stopMatch(): Promise<void> {
+    await fetch(`${API_BASE_URL}/api/match/stop`, {
+      method: 'POST'
+    });
+  }
+
+  async resetMatch(): Promise<void> {
+    await fetch(`${API_BASE_URL}/api/match/reset`, {
+      method: 'POST'
+    });
+  }
+
+  async setMatchDuration(durationSeconds: number): Promise<void> {
+    await fetch(`${API_BASE_URL}/api/match/duration`, {
+      method: 'POST',
+      body: durationSeconds.toString()
+    });
   }
 }
 

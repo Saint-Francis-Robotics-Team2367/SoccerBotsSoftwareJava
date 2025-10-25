@@ -10,7 +10,7 @@ Minibot::Minibot(const char* robotId,
                       leftX(127), leftY(127), rightX(127), rightY(127),
                       cross(false), circle(false), square(false), triangle(false),
                       gameStatus("standby"), emergencyStop(false), connected(false),
-                      assignedPort(0), lastPingTime(0), lastCommandTime(0)
+                      lastPingTime(0), lastCommandTime(0)
 {
 
 }
@@ -31,9 +31,13 @@ void Minibot::begin()
   }
   Serial.println("\nConnected! IP: " + WiFi.localIP().toString());
 
-  // Start UDP on discovery port
-  udp.begin(DISCOVERY_PORT);
-  Serial.println("Listening on discovery port " + String(DISCOVERY_PORT));
+  // Start UDP on command port
+  udp.begin(COMMAND_PORT);
+  Serial.println("Listening on command port " + String(COMMAND_PORT));
+
+  // Send initial discovery ping
+  sendDiscoveryPing();
+  connected = true;  // Mark as ready to receive commands
 
   // Stop all motors initially
   stopAllMotors();
@@ -57,20 +61,16 @@ void Minibot::stopAllMotors() {
 }
 
 void Minibot::updateController() {
-  // Send discovery pings if not connected (every 2 seconds)
+  // Send discovery pings periodically (every 2 seconds)
   unsigned long now = millis();
-  if (!connected && (now - lastPingTime > 2000)) {
+  if (now - lastPingTime > 2000) {
     sendDiscoveryPing();
     lastPingTime = now;
   }
 
-  // Check for timeout (5 seconds without command = disconnect)
-  if (connected && (now - lastCommandTime > 5000)) {
-    Serial.println("Connection timeout - reverting to discovery mode");
-    connected = false;
-    assignedPort = 0;
-    udp.stop();
-    udp.begin(DISCOVERY_PORT);
+  // Check for timeout (5 seconds without command = stop motors)
+  if (connected && lastCommandTime > 0 && (now - lastCommandTime > 5000)) {
+    Serial.println("Connection timeout - stopping motors");
     stopAllMotors();
   }
 
@@ -80,25 +80,6 @@ void Minibot::updateController() {
     if (len > 0) incomingPacket[len] = '\0';
 
     String packetStr = String(incomingPacket);
-
-    // Handle port assignment response: "PORT:<robotId>:<port>"
-    if (!connected && packetStr.startsWith("PORT:")) {
-      int sep1 = packetStr.indexOf(':', 5);
-      if (sep1 != -1) {
-        String name = packetStr.substring(5, sep1);
-        if (name == robotId) {
-          assignedPort = packetStr.substring(sep1 + 1).toInt();
-          if (assignedPort > 0) {
-            udp.stop();
-            udp.begin(assignedPort);
-            connected = true;
-            lastCommandTime = now;
-            Serial.println("Assigned port " + String(assignedPort) + " - connected!");
-          }
-        }
-      }
-      return;
-    }
 
     // Handle emergency stop: "ESTOP"
     if (packetStr == "ESTOP") {

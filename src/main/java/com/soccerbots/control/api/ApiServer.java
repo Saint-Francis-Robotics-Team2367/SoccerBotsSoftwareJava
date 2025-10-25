@@ -12,8 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 public class ApiServer {
@@ -26,11 +25,18 @@ public class ApiServer {
     private final NetworkManager networkManager;
     private final Set<org.eclipse.jetty.websocket.api.Session> wsSessions;
 
+    // Match timer state
+    private long matchDurationMs = 120000; // Default: 2 minutes
+    private long matchStartTime = 0;
+    private boolean matchRunning = false;
+    private final ScheduledExecutorService timerExecutor;
+
     public ApiServer(RobotManager robotManager, ControllerManager controllerManager, NetworkManager networkManager) {
         this.robotManager = robotManager;
         this.controllerManager = controllerManager;
         this.networkManager = networkManager;
         this.wsSessions = new CopyOnWriteArraySet<>();
+        this.timerExecutor = Executors.newScheduledThreadPool(1);
 
         this.app = Javalin.create(config -> {
             config.plugins.enableCors(cors -> {
@@ -41,6 +47,7 @@ public class ApiServer {
         });
 
         setupRoutes();
+        startTimerBroadcast();
     }
 
     private void setupRoutes() {
@@ -80,6 +87,13 @@ public class ApiServer {
 
         // Network statistics
         app.get("/api/network/stats", this::getNetworkStats);
+
+        // Match timer endpoints
+        app.get("/api/match/timer", this::getMatchTimer);
+        app.post("/api/match/start", this::startMatch);
+        app.post("/api/match/stop", this::stopMatch);
+        app.post("/api/match/reset", this::resetMatch);
+        app.post("/api/match/duration", this::setMatchDuration);
 
         // WebSocket for real-time updates
         app.ws("/ws", ws -> {
@@ -267,6 +281,90 @@ public class ApiServer {
         }
     }
 
+    private void getMatchTimer(Context ctx) {
+        long now = System.currentTimeMillis();
+        long timeRemainingMs = matchRunning
+            ? Math.max(0, matchDurationMs - (now - matchStartTime))
+            : matchDurationMs;
+
+        Map<String, Object> timerData = new HashMap<>();
+        timerData.put("running", matchRunning);
+        timerData.put("timeRemainingMs", timeRemainingMs);
+        timerData.put("durationMs", matchDurationMs);
+        timerData.put("timeRemainingSeconds", timeRemainingMs / 1000);
+
+        ctx.json(timerData);
+    }
+
+    private void startMatch(Context ctx) {
+        if (!matchRunning) {
+            matchStartTime = System.currentTimeMillis();
+            matchRunning = true;
+            robotManager.startTeleop();  // Enable robot movement
+            logger.info("Match started - {} seconds", matchDurationMs / 1000);
+            broadcastUpdate("match_start", Map.of(
+                "durationMs", matchDurationMs,
+                "timestamp", matchStartTime
+            ));
+        }
+        ctx.json(Map.of("success", true, "message", "Match started"));
+    }
+
+    private void stopMatch(Context ctx) {
+        if (matchRunning) {
+            matchRunning = false;
+            robotManager.stopTeleop();  // Disable robot movement
+            logger.info("Match stopped");
+            broadcastUpdate("match_stop", Map.of("timestamp", System.currentTimeMillis()));
+        }
+        ctx.json(Map.of("success", true, "message", "Match stopped"));
+    }
+
+    private void resetMatch(Context ctx) {
+        matchRunning = false;
+        matchStartTime = 0;
+        robotManager.stopTeleop();
+        logger.info("Match reset");
+        broadcastUpdate("match_reset", Map.of("timestamp", System.currentTimeMillis()));
+        ctx.json(Map.of("success", true, "message", "Match reset"));
+    }
+
+    private void setMatchDuration(Context ctx) {
+        try {
+            long durationSeconds = Long.parseLong(ctx.body());
+            matchDurationMs = durationSeconds * 1000;
+            logger.info("Match duration set to {} seconds", durationSeconds);
+            broadcastUpdate("match_duration_changed", Map.of("durationMs", matchDurationMs));
+            ctx.json(Map.of("success", true, "durationMs", matchDurationMs));
+        } catch (NumberFormatException e) {
+            ctx.status(400).json(Map.of("error", "Invalid duration format"));
+        }
+    }
+
+    private void startTimerBroadcast() {
+        // Broadcast timer updates every second
+        timerExecutor.scheduleAtFixedRate(() -> {
+            if (matchRunning) {
+                long now = System.currentTimeMillis();
+                long timeRemainingMs = Math.max(0, matchDurationMs - (now - matchStartTime));
+
+                // Auto-stop when time expires
+                if (timeRemainingMs == 0 && matchRunning) {
+                    matchRunning = false;
+                    robotManager.stopTeleop();
+                    broadcastUpdate("match_end", Map.of("timestamp", now));
+                    logger.info("Match ended - time expired");
+                }
+
+                broadcastUpdate("timer_update", Map.of(
+                    "timeRemainingMs", timeRemainingMs,
+                    "timeRemainingSeconds", timeRemainingMs / 1000,
+                    "running", matchRunning
+                ));
+            }
+        }, 0, 1, TimeUnit.SECONDS);
+    }
+
     public void start() {
         start(DEFAULT_PORT);
     }
@@ -277,6 +375,17 @@ public class ApiServer {
     }
 
     public void stop() {
+        if (timerExecutor != null) {
+            timerExecutor.shutdown();
+            try {
+                if (!timerExecutor.awaitTermination(2, TimeUnit.SECONDS)) {
+                    timerExecutor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                timerExecutor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
         app.stop();
         logger.info("API server stopped");
     }

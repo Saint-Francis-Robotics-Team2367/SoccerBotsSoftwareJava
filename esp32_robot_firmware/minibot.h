@@ -13,7 +13,7 @@ const int resolution = 10;
 #define WIFI_SSID "WATCHTOWER"
 #define WIFI_PASSWORD "lancerrobotics"
 #define DISCOVERY_PORT 12345
-#define COMMAND_PORT_BASE 12346
+#define COMMAND_PORT 2367  // Static UDP port for all robot commands
 
 class Minibot {
 private:
@@ -36,7 +36,6 @@ private:
     String gameStatus;
     bool emergencyStop;
     bool connected;
-    unsigned int assignedPort;
     unsigned long lastPingTime;
     unsigned long lastCommandTime;
 
