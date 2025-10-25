@@ -117,9 +117,19 @@ public class ApiServer {
 
     private void getRobots(Context ctx) {
         List<Map<String, Object>> robotsList = new ArrayList<>();
+        Set<String> addedRobots = new HashSet<>();
 
-        for (Robot robot : robotManager.getDiscoveredRobots()) {
+        // Add all connected robots first
+        for (Robot robot : robotManager.getConnectedRobots()) {
             robotsList.add(robotToMap(robot));
+            addedRobots.add(robot.getId());
+        }
+
+        // Add discovered robots that aren't already in the list
+        for (Robot robot : robotManager.getDiscoveredRobots()) {
+            if (!addedRobots.contains(robot.getId())) {
+                robotsList.add(robotToMap(robot));
+            }
         }
 
         ctx.json(robotsList);
@@ -141,7 +151,8 @@ public class ApiServer {
         Robot robot = robotManager.getRobot(id);
 
         if (robot != null) {
-            // Robot is already discovered, mark as connected
+            // Connect the robot (move from discovered to connected)
+            robotManager.connectDiscoveredRobot(id);
             ctx.json(Map.of(
                 "success", true,
                 "message", "Robot connected",
@@ -158,8 +169,9 @@ public class ApiServer {
         Robot robot = robotManager.getRobot(id);
 
         if (robot != null) {
-            // Send stop command
+            // Send stop command and remove from connected robots
             robotManager.sendStopCommand(id);
+            robotManager.removeRobot(id);
             ctx.json(Map.of(
                 "success", true,
                 "message", "Robot disconnected"

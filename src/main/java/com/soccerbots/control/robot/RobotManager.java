@@ -94,6 +94,22 @@ public class RobotManager {
     }
 
     /**
+     * Connect to a discovered robot
+     */
+    public Robot connectDiscoveredRobot(String robotId) {
+        Robot robot = discoveredRobots.get(robotId);
+        if (robot != null) {
+            robot.setStatus("connected");
+            robot.setConnected(true);
+            connectedRobots.put(robotId, robot);
+            logger.info("Connected to discovered robot: {} at {}", robotId, robot.getIpAddress());
+            return robot;
+        }
+        logger.warn("Cannot connect - robot not found in discovered robots: {}", robotId);
+        return null;
+    }
+
+    /**
      * Add an ESP32 robot manually by IP address and name
      */
     public Robot addRobot(String robotName, String ipAddress) {
@@ -275,7 +291,12 @@ public class RobotManager {
     }
 
     public Robot getRobot(String robotName) {
-        return connectedRobots.get(robotName);
+        // Check connected robots first, then discovered robots
+        Robot robot = connectedRobots.get(robotName);
+        if (robot == null) {
+            robot = discoveredRobots.get(robotName);
+        }
+        return robot;
     }
 
     public void removeRobot(String robotName) {

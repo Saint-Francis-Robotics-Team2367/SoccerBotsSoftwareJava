@@ -19,7 +19,7 @@ public class Robot {
         this.status = status;
         this.lastSeenTime = System.currentTimeMillis();
         this.lastCommandTime = 0;
-        this.isConnected = true;
+        this.isConnected = "connected".equals(status);
         this.pairedControllerId = null;
     }
     
