@@ -42,6 +42,7 @@ export default function App() {
     const unsubRobotDisconnected = apiService.on("robot_disconnected", (data) => {
       console.log("[WebSocket] Robot disconnected:", data);
       fetchRobots();
+      addTerminalLine(`$ Robot ${data.id} disconnected`);
     });
 
     const unsubEmergency = apiService.on("emergency_stop", (data) => {
@@ -127,7 +128,7 @@ export default function App() {
       const robot = robots.find((r) => r.id === id);
       if (!robot) return;
 
-      const isConnecting = robot.status === "disconnected";
+      const isConnecting = robot.status === "disconnected" || robot.status === "discovered";
 
       if (isConnecting) {
         await apiService.connectRobot(id);
@@ -141,11 +142,15 @@ export default function App() {
         addTerminalLine(`$ ${robot.name} disconnected`);
       }
 
-      // Refresh robot list
-      await fetchRobots();
+      // Force refresh robot list after a short delay
+      setTimeout(async () => {
+        await fetchRobots();
+      }, 100);
     } catch (error) {
       console.error("[App] Failed to toggle connection:", error);
       toast.error("Failed to toggle connection");
+      // Refresh anyway to show current state
+      fetchRobots();
     }
   };
 
@@ -276,6 +281,23 @@ export default function App() {
     }
   };
 
+  const handleRefreshControllers = async () => {
+    try {
+      toast.info("Scanning for controllers...");
+      addTerminalLine("$ Refreshing controller list...");
+      await apiService.refreshControllers();
+
+      // Wait a bit for detection, then fetch
+      setTimeout(async () => {
+        await fetchControllers();
+        addTerminalLine("$ Controller scan complete");
+      }, 1000);
+    } catch (error) {
+      console.error("[App] Failed to refresh controllers:", error);
+      toast.error("Failed to refresh controllers");
+    }
+  };
+
   return (
     <div className="min-h-screen p-6">
       <Toaster position="top-right" theme="dark" />
@@ -323,6 +345,7 @@ export default function App() {
               onUnpair={handleUnpairController}
               onEnable={handleEnableController}
               onDisable={handleDisableController}
+              onRefresh={handleRefreshControllers}
             />
           </div>
         </div>

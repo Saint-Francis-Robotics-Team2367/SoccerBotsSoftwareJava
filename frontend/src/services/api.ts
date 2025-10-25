@@ -284,6 +284,12 @@ class ApiService {
       method: 'POST'
     });
   }
+
+  async refreshControllers(): Promise<void> {
+    await fetch(`${API_BASE_URL}/api/controllers/refresh`, {
+      method: 'POST'
+    });
+  }
 }
 
 export const apiService = new ApiService();

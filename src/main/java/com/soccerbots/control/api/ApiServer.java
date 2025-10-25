@@ -86,6 +86,7 @@ public class ApiServer {
         app.post("/api/controllers/{controllerId}/unpair", this::unpairController);
         app.post("/api/controllers/{controllerId}/enable", this::enableController);
         app.post("/api/controllers/{controllerId}/disable", this::disableController);
+        app.post("/api/controllers/refresh", this::refreshControllers);
 
         // Emergency stop
         app.post("/api/emergency-stop", this::emergencyStop);
@@ -278,6 +279,15 @@ public class ApiServer {
             "message", "Controller disabled"
         ));
         broadcastUpdate("controller_disabled", Map.of("controllerId", controllerId));
+    }
+
+    private void refreshControllers(Context ctx) {
+        controllerManager.refreshControllers();
+        ctx.json(Map.of(
+            "success", true,
+            "message", "Scanning for controllers"
+        ));
+        broadcastUpdate("controllers_refreshing", Map.of("timestamp", System.currentTimeMillis()));
     }
 
     private void emergencyStop(Context ctx) {

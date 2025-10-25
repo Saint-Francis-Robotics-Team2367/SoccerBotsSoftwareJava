@@ -52,7 +52,9 @@ public class ControllerManager {
             try {
                 controllers = env.getControllers();
             } catch (UnsatisfiedLinkError e) {
-                logger.warn("JInput native libraries not available. Controller support disabled. Error: {}", e.getMessage());
+                logger.warn("JInput native libraries not available. Controller support disabled.");
+                logger.warn("Error: {}", e.getMessage());
+                logger.warn("Java library path: {}", System.getProperty("java.library.path"));
                 return;
             } catch (Exception e) {
                 logger.error("Failed to get controllers from environment", e);
@@ -60,11 +62,11 @@ public class ControllerManager {
             }
 
             if (controllers == null) {
-                logger.debug("No controllers array returned from environment");
+                logger.info("No controllers array returned from environment (NULL)");
                 return;
             }
 
-            logger.debug("Scanning {} total controllers", controllers.length);
+            logger.info("Scanning {} total input devices from JInput", controllers.length);
 
             for (Controller controller : controllers) {
                 if (controller == null) {
@@ -333,7 +335,7 @@ public class ControllerManager {
     }
 
     public void refreshControllers() {
-        logger.info("Manual controller refresh requested");
+        logger.info("========== MANUAL CONTROLLER REFRESH REQUESTED ==========");
         try {
             // Force a complete environment refresh for newly connected devices
             logger.info("Refreshing controller environment...");
@@ -341,16 +343,29 @@ public class ControllerManager {
             // Try to reinitialize the controller environment if possible
             ControllerEnvironment env = ControllerEnvironment.getDefaultEnvironment();
 
+            if (env == null) {
+                logger.error("Controller environment is NULL - JInput may not be initialized properly");
+                return;
+            }
+
+            logger.info("Controller environment class: {}", env.getClass().getName());
+
             // Clear existing controllers first
-            logger.debug("Current controller count before refresh: {}", connectedControllers.size());
+            logger.info("Current controller count before refresh: {}", connectedControllers.size());
 
             // Perform detection
             detectControllers();
 
-            logger.info("Controller refresh completed. Found {} controllers", connectedControllers.size());
+            logger.info("========== REFRESH COMPLETED: Found {} controllers ==========", connectedControllers.size());
+
+            // Log each detected controller
+            for (GameController gc : connectedControllers.values()) {
+                logger.info("  - {} (Type: {}, ID: {})", gc.getName(), gc.getType(), gc.getId());
+            }
 
         } catch (Exception e) {
             logger.error("Error during manual controller refresh", e);
+            e.printStackTrace();
         }
     }
     

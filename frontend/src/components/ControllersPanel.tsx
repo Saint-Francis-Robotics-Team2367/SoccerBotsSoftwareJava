@@ -1,4 +1,4 @@
-import { Gamepad2, Link, Unlink, Power, Ban, Circle } from "lucide-react";
+import { Gamepad2, Link, Unlink, Power, Ban, Circle, RefreshCw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
@@ -32,6 +32,7 @@ interface ControllersPanelProps {
   onUnpair: (controllerId: string) => void;
   onEnable: (controllerId: string) => void;
   onDisable: (controllerId: string) => void;
+  onRefresh: () => void;
 }
 
 export function ControllersPanel({
@@ -41,6 +42,7 @@ export function ControllersPanel({
   onUnpair,
   onEnable,
   onDisable,
+  onRefresh,
 }: ControllersPanelProps) {
   const [pairingController, setPairingController] = useState<string | null>(null);
 
@@ -69,7 +71,14 @@ export function ControllersPanel({
           <h2 className="text-cyan-400">Controllers</h2>
           <p className="text-xs text-gray-400">{controllers.length} detected</p>
         </div>
-        <Gamepad2 className="h-5 w-5 text-cyan-400" />
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={onRefresh}
+          className="h-8 w-8 p-0 hover:bg-cyan-500/20 hover:text-cyan-400"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
       </div>
 
       <ScrollArea className="flex-1 min-h-0">
