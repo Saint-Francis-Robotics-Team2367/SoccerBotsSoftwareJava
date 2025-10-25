@@ -5,28 +5,22 @@ Minibot::Minibot(const char* robotId,
                  int leftMotorPin, int rightMotorPin,
                  int dcMotorPin, int servoMotorPin)
                   : robotId(robotId),
-                      leftPin(leftMotorPin), rightPin(rightMotorPin),
+                      leftMotorPin(leftMotorPin), rightMotorPin(rightMotorPin),
                       dcMotorPin(dcMotorPin), servoMotorPin(servoMotorPin),
                       leftX(127), leftY(127), rightX(127), rightY(127),
                       cross(false), circle(false), square(false), triangle(false),
                       gameStatus("standby"), emergencyStop(false), connected(false),
                       assignedPort(0), lastPingTime(0), lastCommandTime(0)
 {
-  Serial.begin(115200);
 
-  pinMode(leftPin, OUTPUT);
-  pinMode(rightPin, OUTPUT);
-  pinMode(dcMotorPin, OUTPUT);
-  pinMode(servoMotorPin, OUTPUT);
-  bool left = ledcAttachChannel(leftPin, freq, resolution, LEFT_PWM_CHANNEL);
-  bool right = ledcAttachChannel(rightPin, freq, resolution, RIGHT_PWM_CHANNEL);
-  bool dc = ledcAttachChannel(dcMotorPin, freq, resolution, DC_PWM_CHANNEL);
-  bool servo = ledcAttachChannel(servoMotorPin, freq, resolution, SERVO_PWM_CHANNEL);
+}
 
-  Serial.println(left);
-  Serial.println(right);
-  Serial.println(dc);
-  Serial.println(servo);
+void Minibot::begin()
+{
+  ledcAttach(leftMotorPin, freq, resolution);
+  ledcAttach(rightMotorPin, freq, resolution);
+  ledcAttach(dcMotorPin, freq, resolution);
+  ledcAttach(servoMotorPin, freq, resolution);
 
   // Wi-Fi connection
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -46,7 +40,6 @@ Minibot::Minibot(const char* robotId,
 }
 
 
-
 void Minibot::sendDiscoveryPing() {
   // Format: "DISCOVER:<robotId>:<IP>"
   String msg = "DISCOVER:" + String(robotId) + ":" + WiFi.localIP().toString();
@@ -57,8 +50,8 @@ void Minibot::sendDiscoveryPing() {
 }
 
 void Minibot::stopAllMotors() {
-  driveLeft(0);
-  driveRight(0);
+  driveLeftMotor(0);
+  driveRightMotor(0);
   driveDCMotor(0);
   driveServoMotor(0);
 }
@@ -178,36 +171,26 @@ String Minibot::getGameStatus() { return gameStatus; }
 
 bool Minibot::driveDCMotor(float value) {
   if (value < -1 || value > 1)
-    {
+  {
     return false;
   }
-
-    float pulseWidthMs = 0.5 * value + 1.5;
-    int dutyCycle = (pulseWidthMs / 10.0) * 65535;
-    ledcWriteChannel(DC_PWM_CHANNEL, dutyCycle);
-  return true;
+  return ledcWrite(dcMotorPin, round((value*30)+90));
 }
 
-bool Minibot::driveLeft(float value) {
+bool Minibot::driveLeftMotor(float value) {
   if (value < -1 || value > 1)
   {
     return false;
   }
-  float pulseWidthMs = 0.5 * value + 1.5;
-  int dutyCycle = (pulseWidthMs / 10.0) * 65535;
-  ledcWriteChannel(LEFT_PWM_CHANNEL, dutyCycle);
-  return true;
+  return ledcWrite(leftMotorPin, round((value*30)+90));
 }
 
-bool Minibot::driveRight(float value) {
+bool Minibot::driveRightMotor(float value) {
   if (value < -1 || value > 1)
   {
     return false;
   }
-  float pulseWidthMs = 0.5 * value + 1.5;
-  int dutyCycle = (pulseWidthMs / 10.0) * 65535;
-  ledcWriteChannel(RIGHT_PWM_CHANNEL, dutyCycle);
-  return true;
+  return ledcWrite(rightMotorPin, round((value*30)+90));
 }
 
 bool Minibot::driveServoMotor(int angle) {
@@ -216,6 +199,6 @@ bool Minibot::driveServoMotor(int angle) {
   }
   float pulseWidthMs = 0.01 * angle + 1.5;
   int dutyCycle = (pulseWidthMs / 10.0) * 65535;
-  ledcWriteChannel(SERVO_PWM_CHANNEL, dutyCycle);
+  ledcWrite(servoMotorPin, dutyCycle);
   return true;
 }

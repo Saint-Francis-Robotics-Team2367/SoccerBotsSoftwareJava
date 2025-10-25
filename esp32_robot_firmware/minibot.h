@@ -1,17 +1,13 @@
 #ifndef MINIBOT_H
 #define MINIBOT_H
 
-#include <Arduino.h>
+#include <driver/ledc.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
 
 // PWM Channel Definitions
-const int LEFT_PWM_CHANNEL = 0;
-const int RIGHT_PWM_CHANNEL = 1;
-const int DC_PWM_CHANNEL = 2;
-const int SERVO_PWM_CHANNEL = 3;
-const int freq = 100;
-const int resolution = 16;
+const int freq = 50;
+const int resolution = 10;
 
 // WiFi Configuration
 #define WIFI_SSID "WATCHTOWER"
@@ -22,8 +18,8 @@ const int resolution = 16;
 class Minibot {
 private:
     const char* robotId;
-    int leftPin;
-    int rightPin;
+    int leftMotorPin;
+    int rightMotorPin;
     int dcMotorPin;
     int servoMotorPin;
 
@@ -57,6 +53,8 @@ public:
           int leftMotorPin = 16, int rightMotorPin = 17,
           int dcMotorPin = 18, int servoMotorPin = 19);
 
+    void begin();
+
     // Update controller state from UDP packets
     void updateController();
 
@@ -77,8 +75,8 @@ public:
 
     // Motor control methods
     bool driveDCMotor(float value);      // value: -1.0 to 1.0
-    bool driveLeft(float value);         // value: -1.0 to 1.0
-    bool driveRight(float value);        // value: -1.0 to 1.0
+    bool driveLeftMotor(float value);         // value: -1.0 to 1.0
+    bool driveRightMotor(float value);        // value: -1.0 to 1.0
     bool driveServoMotor(int angle);     // angle: -50 to 50 degrees
 };
 
