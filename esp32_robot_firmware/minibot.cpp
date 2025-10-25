@@ -17,10 +17,10 @@ Minibot::Minibot(const char* robotId,
 
 void Minibot::begin()
 {
-  ledcAttach(leftMotorPin, freq, resolution);
-  ledcAttach(rightMotorPin, freq, resolution);
-  ledcAttach(dcMotorPin, freq, resolution);
-  ledcAttach(servoMotorPin, freq, resolution);
+  ledcAttach(leftMotorPin, PWM_FREQ, PWM_RESOLUTION);
+  ledcAttach(rightMotorPin, PWM_FREQ, PWM_RESOLUTION);
+  ledcAttach(dcMotorPin, PWM_FREQ, PWM_RESOLUTION);
+  ledcAttach(servoMotorPin, PWM_FREQ, PWM_RESOLUTION);
 
   // Wi-Fi connection
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);

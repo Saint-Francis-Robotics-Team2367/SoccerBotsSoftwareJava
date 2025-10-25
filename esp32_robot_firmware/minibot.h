@@ -1,19 +1,19 @@
 #ifndef MINIBOT_H
 #define MINIBOT_H
 
-#include <driver/ledc.h>
+#include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiUdp.h>
-
-// PWM Channel Definitions
-const int freq = 50;
-const int resolution = 10;
 
 // WiFi Configuration
 #define WIFI_SSID "WATCHTOWER"
 #define WIFI_PASSWORD "lancerrobotics"
 #define DISCOVERY_PORT 12345
 #define COMMAND_PORT 2367  // Static UDP port for all robot commands
+
+// PWM Configuration
+#define PWM_FREQ 50
+#define PWM_RESOLUTION 10
 
 class Minibot {
 private:

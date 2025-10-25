@@ -5,7 +5,16 @@
 Minibot bot("YOUR NAME HERE");
 
 void setup() {
+  Serial.begin(115200);
+  delay(100);
 
+  Serial.println("\n=== Minibot Starting ===");
+  Serial.println("Initializing robot...");
+
+  // Initialize the robot (WiFi, motors, UDP)
+  bot.begin();
+
+  Serial.println("Robot ready!");
 }
 
 void loop() {
@@ -13,5 +22,8 @@ void loop() {
   bot.updateController();
 
   // TODO: Write your robot control code here
-
+  // Example:
+  // float speed = (bot.getLeftY() - 127) / 127.0;
+  // bot.driveLeftMotor(speed);
+  // bot.driveRightMotor(speed);
 }
