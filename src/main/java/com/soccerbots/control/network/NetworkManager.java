@@ -12,8 +12,7 @@ public class NetworkManager {
 
     // ESP32 Communication Constants
     public static final int DISCOVERY_PORT = 12345;
-    public static final int COMMAND_PORT_BASE = 12346;
-    public static final int ESP32_UDP_PORT = 2367; // Legacy port
+    public static final int ESP32_UDP_PORT = 2367; // ESP32 command port
     public static final String EXPECTED_WIFI_NETWORK = "WATCHTOWER";
 
     private boolean isConnectedToNetwork = false;

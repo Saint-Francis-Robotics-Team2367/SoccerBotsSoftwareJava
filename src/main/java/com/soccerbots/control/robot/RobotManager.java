@@ -13,25 +13,21 @@ import java.util.Map;
 public class RobotManager {
     private static final Logger logger = LoggerFactory.getLogger(RobotManager.class);
     private static final int DISCOVERY_PORT = 12345;
-    private static final int COMMAND_PORT_BASE = 12346;
 
     private final NetworkManager networkManager;
     private final Map<String, Robot> connectedRobots;
     private final Map<String, Robot> discoveredRobots;
-    private final Map<String, Integer> robotPortAssignments;
     private final ExecutorService executorService;
     private final ScheduledExecutorService discoveryExecutor;
 
     // Game state management
     private volatile String currentGameState = "standby";
     private volatile boolean emergencyStopActive = false;
-    private int nextAvailablePort = COMMAND_PORT_BASE;
 
     public RobotManager(NetworkManager networkManager) {
         this.networkManager = networkManager;
         this.connectedRobots = new ConcurrentHashMap<>();
         this.discoveredRobots = new ConcurrentHashMap<>();
-        this.robotPortAssignments = new ConcurrentHashMap<>();
         this.executorService = Executors.newCachedThreadPool();
         this.discoveryExecutor = Executors.newScheduledThreadPool(1);
 
@@ -69,15 +65,6 @@ public class RobotManager {
             String robotId = parts[1];
             String ipAddress = parts[2];
 
-            // Check if robot already has port assignment
-            if (!robotPortAssignments.containsKey(robotId)) {
-                assignPortToRobot(robotId, ipAddress);
-            } else {
-                // Re-send port assignment
-                int port = robotPortAssignments.get(robotId);
-                sendPortAssignment(robotId, ipAddress, port);
-            }
-
             // Add/update discovered robot
             Robot robot = discoveredRobots.get(robotId);
             if (robot == null) {
@@ -89,24 +76,6 @@ public class RobotManager {
                 robot.updateLastSeenTime();
             }
         }
-    }
-
-    /**
-     * Assign a unique port to a robot
-     */
-    private void assignPortToRobot(String robotId, String ipAddress) {
-        int assignedPort = nextAvailablePort++;
-        robotPortAssignments.put(robotId, assignedPort);
-        sendPortAssignment(robotId, ipAddress, assignedPort);
-        logger.info("Assigned port {} to robot {}", assignedPort, robotId);
-    }
-
-    /**
-     * Send port assignment to robot: "PORT:<robotId>:<port>"
-     */
-    private void sendPortAssignment(String robotId, String ipAddress, int port) {
-        String message = "PORT:" + robotId + ":" + port;
-        networkManager.sendDiscoveryResponse(ipAddress, message);
     }
 
     /**
@@ -130,11 +99,6 @@ public class RobotManager {
     public Robot addRobot(String robotName, String ipAddress) {
         Robot robot = new Robot(robotName, robotName, ipAddress, "connected");
         connectedRobots.put(robotName, robot);
-
-        // Assign port if not already assigned
-        if (!robotPortAssignments.containsKey(robotName)) {
-            assignPortToRobot(robotName, ipAddress);
-        }
 
         logger.info("Added ESP32 robot: {} at {}", robotName, ipAddress);
         return robot;
