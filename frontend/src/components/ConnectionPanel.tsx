@@ -19,12 +19,13 @@ interface ConnectionPanelProps {
   robots: Robot[];
   selectedRobots: string[];
   onConnect: (id: string) => void;
+  onDisconnect: (id: string) => void;
   onRefresh: () => void;
   onDisable: (id: string) => void;
   onToggleSelection: (id: string) => void;
 }
 
-export function ConnectionPanel({ robots, selectedRobots, onConnect, onRefresh, onDisable, onToggleSelection }: ConnectionPanelProps) {
+export function ConnectionPanel({ robots, selectedRobots, onConnect, onDisconnect, onRefresh, onDisable, onToggleSelection }: ConnectionPanelProps) {
   return (
     <div className="h-full flex flex-col backdrop-blur-md bg-black/30 border border-white/10 rounded-lg p-4 overflow-hidden">
       <div className="flex items-center justify-between mb-4 shrink-0">
@@ -107,7 +108,7 @@ export function ConnectionPanel({ robots, selectedRobots, onConnect, onRefresh, 
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  onClick={() => onConnect(robot.id)}
+                  onClick={() => (robot.status === "connected" ? onDisconnect(robot.id) : onConnect(robot.id))}
                   disabled={robot.status === "connecting"}
                   className="flex-1 h-7 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/50 disabled:opacity-50"
                 >

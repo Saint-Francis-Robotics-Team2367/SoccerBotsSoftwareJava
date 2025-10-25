@@ -128,27 +128,40 @@ export default function App() {
       const robot = robots.find((r) => r.id === id);
       if (!robot) return;
 
-      const isConnecting = robot.status === "disconnected" || robot.status === "discovered";
-
-      if (isConnecting) {
-        await apiService.connectRobot(id);
-        toast.success(`${robot.name} connected successfully`);
-        addTerminalLine(`$ Connecting to ${robot.name}...`);
-        addTerminalLine(`$ ${robot.name} connected successfully`);
-      } else {
-        await apiService.disconnectRobot(id);
-        toast.success(`${robot.name} disconnected`);
-        addTerminalLine(`$ Disconnecting from ${robot.name}...`);
-        addTerminalLine(`$ ${robot.name} disconnected`);
-      }
+      await apiService.connectRobot(id);
+      toast.success(`${robot.name} connected successfully`);
+      addTerminalLine(`$ Connecting to ${robot.name}...`);
+      addTerminalLine(`$ ${robot.name} connected successfully`);
 
       // Force refresh robot list after a short delay
       setTimeout(async () => {
         await fetchRobots();
       }, 100);
     } catch (error) {
-      console.error("[App] Failed to toggle connection:", error);
-      toast.error("Failed to toggle connection");
+      console.error("[App] Failed to connect:", error);
+      toast.error("Failed to connect");
+      // Refresh anyway to show current state
+      fetchRobots();
+    }
+  };
+
+  const handleDisconnect = async (id: string) => {
+    try {
+      const robot = robots.find((r) => r.id === id);
+      if (!robot) return;
+
+      await apiService.disconnectRobot(id);
+      toast.success(`${robot.name} disconnected`);
+      addTerminalLine(`$ Disconnecting from ${robot.name}...`);
+      addTerminalLine(`$ ${robot.name} disconnected`);
+
+      // Force refresh robot list after a short delay
+      setTimeout(async () => {
+        await fetchRobots();
+      }, 100);
+    } catch (error) {
+      console.error("[App] Failed to disconnect:", error);
+      toast.error("Failed to disconnect");
       // Refresh anyway to show current state
       fetchRobots();
     }
@@ -332,6 +345,7 @@ export default function App() {
               robots={robots}
               selectedRobots={selectedRobots}
               onConnect={handleConnect}
+              onDisconnect={handleDisconnect}
               onRefresh={handleRefresh}
               onDisable={handleDisable}
               onToggleSelection={handleToggleRobotSelection}
