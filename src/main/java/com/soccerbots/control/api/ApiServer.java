@@ -345,8 +345,22 @@ public class ApiServer {
         try {
             long durationSeconds = Long.parseLong(ctx.body());
             matchDurationMs = durationSeconds * 1000;
+
+            // If match is not running, reset the timer to new duration
+            if (!matchRunning) {
+                matchStartTime = 0;
+            }
+
             logger.info("Match duration set to {} seconds", durationSeconds);
             broadcastUpdate("match_duration_changed", Map.of("durationMs", matchDurationMs));
+
+            // Broadcast updated timer state
+            broadcastUpdate("timer_update", Map.of(
+                "timeRemainingMs", matchDurationMs,
+                "timeRemainingSeconds", durationSeconds,
+                "running", matchRunning
+            ));
+
             ctx.json(Map.of("success", true, "durationMs", matchDurationMs));
         } catch (NumberFormatException e) {
             ctx.status(400).json(Map.of("error", "Invalid duration format"));
