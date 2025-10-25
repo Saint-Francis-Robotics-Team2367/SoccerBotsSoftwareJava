@@ -28,10 +28,17 @@ This project provides a complete robot control solution with:
 ### ESP32 Robots
 - **Hardware**: ESP32-WROOM development boards
 - **Network**: WiFi connection to same network as host (default: "WATCHTOWER")
-- **Communication**: UDP ports 12345 (discovery) and 12346+ (commands)
+- **Communication**: UDP ports 12345 (discovery) and 2367 (commands - static)
 - **Firmware**: Arduino IDE with ESP32 board support
 
 ## 🛠️ Quick Start
+
+> **⚡ TL;DR - One Command to Run Everything:**
+> ```bash
+> npm run dev
+> ```
+> This starts the backend, frontend, and opens the native desktop app automatically!
+> See [QUICKSTART.md](QUICKSTART.md) for details.
 
 ### ESP32 Robot Setup
 
@@ -57,39 +64,49 @@ Minibot bot("YOUR_ROBOT_NAME_HERE");  // Change to unique name
 
 **4. Power On Robot**
 - Robot connects to WiFi network "WATCHTOWER" (password: "lancerrobotics")
+- Listens on static port 2367 for commands
 - Sends discovery pings every 2 seconds
-- Driver station automatically assigns unique port
-- Robot is ready when driver station shows "connected"
+- Driver station automatically detects robot and adds to available list
 
-**Robot LED Indicators (via Serial Monitor):**
+**Robot Serial Monitor Output:**
 - "Connecting to WiFi..." - Attempting WiFi connection
 - "Connected! IP: X.X.X.X" - WiFi connected successfully
+- "Listening on command port 2367" - Ready to receive commands
 - "Sent discovery ping" - Broadcasting presence to driver station
-- "Assigned port XXXX - connected!" - Port received from driver station
 - "EMERGENCY STOP ACTIVATED" - All motors stopped
 - "Emergency stop released" - Ready for movement commands
+- "Connection timeout - stopping motors" - No commands received for 5 seconds
 
 **Important:** Each robot must have a unique name in the firmware!
 
-### Option 1: Native Desktop App (Recommended)
+### Option 1: Native Desktop App (Recommended) ⚡
 
 The modern Electron + React interface with real-time updates.
 
+**One Command Development:**
 ```bash
-# 1. Install all dependencies
+# Install dependencies (first time only)
 npm run install:all
 
-# 2. Build Java backend
-npm run build:backend
+# Run everything with one command!
+npm run dev
+```
+This automatically:
+- ✅ Starts Java backend (port 8080)
+- ✅ Starts React dev server (port 5173)
+- ✅ Opens native Electron window
+- ✅ Hot reloads on code changes
 
-# 3. Build frontend
-npm run build:frontend
-
-# 4. Run the app
+**Production Build:**
+```bash
+# Build everything and run
 npm start
+
+# Or create installer
+npm run dist
 ```
 
-**Development Mode** (3 terminals for hot reload):
+**Manual Development** (if you need separate terminals):
 ```bash
 # Terminal 1: Java backend with API
 npm run dev:backend
@@ -250,21 +267,21 @@ Real-time events:
 ## 🌐 Robot Communication Protocol
 
 ### Discovery Protocol (UDP Port 12345)
-**New Dynamic Port Assignment System:**
+**Simple Discovery System:**
 
 1. **Robot Startup**: ESP32 powers on and connects to WiFi
 2. **Discovery Ping**: Robot broadcasts `DISCOVER:<name>:<IP>` every 2 seconds
-3. **Port Assignment**: Driver station responds with `PORT:<name>:<port>` (12346+)
-4. **Connected**: Robot switches to assigned port for commands
-5. **Timeout**: After 5 seconds without commands, robot reverts to discovery mode
+3. **Discovery**: Driver station detects robot and adds to available list
+4. **Ready**: Robot listens on static port 2367 for commands
+5. **Timeout**: After 5 seconds without commands, robot stops motors (but continues discovery)
 
 **Benefits:**
 - No manual IP configuration required
 - Automatic reconnection after power cycle
 - Minimal ESP32 code (~150 lines)
-- Each robot gets unique port per session
+- Simple static port - no dynamic assignment needed
 
-### Command Protocol (Assigned Port 12346+)
+### Command Protocol (Static Port 2367)
 **Binary Movement Commands (24 bytes):**
 ```
 Bytes 0-15:  Robot name (null-padded)
@@ -303,14 +320,14 @@ npm start
 ### 2. Automatic Robot Discovery
 - **No manual scanning needed!** Robots automatically appear when powered on
 - Driver station listens for discovery pings (passive mode)
-- Each robot gets assigned a unique port automatically
+- All robots use the same static port (2367) for commands
 - Watch the **Robot Connections** panel for discovered robots
 
 ### 3. Connect to Robots
 - Discovered robots show in the left panel with status "discovered"
 - Click **Connect** to start sending commands
 - Status changes to "connected" with green indicator
-- Robot receives commands on its assigned port
+- Robot receives commands on static UDP port 2367
 
 ### 4. Attach Controllers
 - Plug in USB game controller
@@ -328,11 +345,12 @@ npm start
 ### 6. Monitor System
 - **Network Analysis**: View latency and bandwidth charts
 - **Terminal Monitor**: See real-time system commands and discovery events
-- **Service Log**: Track all events including discovery pings, port assignments, and emergency stops
+- **Service Log**: Track all events including robot discovery, connections, and emergency stops
 
 ### 7. Reconnection Handling
-- If robot loses connection (timeout), it reverts to discovery mode
-- Driver station automatically reassigns the same port
+- If robot loses connection (timeout), motors stop but discovery continues
+- Robot remains on same static port (2367)
+- Driver station automatically re-detects robot via discovery pings
 - No manual intervention required
 - Power cycling robot clears emergency stop state
 
@@ -340,16 +358,19 @@ npm start
 
 ### Project Setup
 ```bash
-# Install frontend & electron dependencies
+# Install all dependencies (first time only)
 npm run install:all
-
-# Build Java backend
-mvn clean compile assembly:single
 ```
 
 ### Running in Development
 
-**Electron App (Hot Reload):**
+**⚡ Single Command (Recommended):**
+```bash
+npm run dev
+```
+Starts backend + frontend + Electron in one command! Opens native window automatically.
+
+**Manual Control (if needed):**
 ```bash
 # Terminal 1: Backend API
 npm run dev:backend
@@ -435,7 +456,7 @@ mvn clean compile assembly:single
 
 **Check Connection:**
 - Robot must show "connected" status (green indicator)
-- Check Serial Monitor for "Assigned port XXXX - connected!"
+- Check Serial Monitor for "Listening on command port 2367"
 - Verify no emergency stop active (shows in UI and Serial Monitor)
 
 **Check Game State:**
@@ -513,14 +534,15 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 | Task | Command |
 |------|---------|
-| Run native app | `npm start` |
+| **Development (one command!)** | `npm run dev` |
+| Run native app (production) | `npm start` |
 | Run JavaFX GUI | `mvn javafx:run` |
 | Run simulator | `java -cp target/*-jar-with-dependencies.jar com.soccerbots.control.simulator.SimulatorApp` |
 | Build everything | `npm run build:all` |
 | Flash ESP32 firmware | Open `esp32_robot_firmware/minibots.ino` in Arduino IDE → Upload |
 | Check robot status | Arduino Serial Monitor @ 115200 baud |
 | Discovery port | UDP 12345 (firewall must allow) |
-| Command ports | UDP 12346+ (auto-assigned per robot) |
+| Command port (static) | UDP 2367 (all robots) |
 | Emergency stop | Click E-Stop button in Control Panel or send `ESTOP` via UDP |
 
 ### Protocol Ports Reference
@@ -528,10 +550,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 | Port | Purpose | Direction |
 |------|---------|-----------|
 | 12345 | Robot discovery pings | ESP32 → Driver Station (broadcast) |
-| 12345 | Port assignment | Driver Station → ESP32 (unicast) |
-| 12345 | Emergency stop | Driver Station → ESP32 (unicast) |
-| 12346+ | Movement commands | Driver Station → ESP32 (assigned per robot) |
-| 12346+ | Game state | Driver Station → ESP32 (assigned per robot) |
+| 12345 | Emergency stop (ESTOP/ESTOP_OFF) | Driver Station → ESP32 (unicast) |
+| 2367 | Movement commands | Driver Station → ESP32 (all robots, static port) |
+| 2367 | Game state commands | Driver Station → ESP32 (all robots, static port) |
 | 8080 | REST API | Frontend → Backend (localhost) |
 | 8080 | WebSocket | Frontend ↔ Backend (localhost) |
 
