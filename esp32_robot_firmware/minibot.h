@@ -43,7 +43,6 @@ private:
     char incomingPacket[256];
 
     void sendDiscoveryPing();
-    void stopAllMotors();
 
 
 public:
@@ -77,6 +76,7 @@ public:
     bool driveLeftMotor(float value);         // value: -1.0 to 1.0
     bool driveRightMotor(float value);        // value: -1.0 to 1.0
     bool driveServoMotor(int angle);     // angle: -50 to 50 degrees
+    void stopAllMotors();
 };
 
 #endif // MINIBOT_H
