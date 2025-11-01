@@ -65,6 +65,11 @@ class ApiService {
 
     this.socket.on('update', (message) => {
       try {
+        if (!message || typeof message !== 'object' || !message.type) {
+          console.warn('[Socket.IO] Received invalid message format:', message);
+          return;
+        }
+
         const { type, data } = message;
 
         // Handle log events

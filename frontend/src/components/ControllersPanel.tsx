@@ -143,7 +143,7 @@ export function ControllersPanel({
                 )}
 
                 {pairingController === controller.id ? (
-                  <div className="flex flex-col gap-2">
+                  <div className="space-y-2">
                     <Select onValueChange={(value) => handlePair(controller.id, value)}>
                       <SelectTrigger className="h-7 text-xs">
                         <SelectValue placeholder="Select robot" />
