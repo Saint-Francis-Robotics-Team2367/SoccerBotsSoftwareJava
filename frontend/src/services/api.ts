@@ -72,15 +72,15 @@ class ApiService {
 
         const { type, data } = message;
 
-        // Handle log events
+        // Handle log events (data may be undefined for some event types)
         if (type.includes('robot_') || type.includes('emergency') || type.includes('controller')) {
-          this.addLog(this.createLogFromEvent(type, data));
+          this.addLog(this.createLogFromEvent(type, data || {}));
         }
 
         // Notify listeners
         const callbacks = this.wsCallbacks.get(type);
         if (callbacks) {
-          callbacks.forEach(cb => cb(data));
+          callbacks.forEach(cb => cb(data || {}));
         }
       } catch (error) {
         console.error('[Socket.IO] Failed to handle message:', error);
@@ -94,6 +94,15 @@ class ApiService {
     this.socket.on('disconnect', () => {
       console.log('[Socket.IO] Disconnected, will reconnect automatically');
     });
+  }
+
+  // Disconnect Socket.IO connection
+  disconnect() {
+    if (this.socket) {
+      this.socket.disconnect();
+      this.socket = null;
+      console.log('[Socket.IO] Connection closed');
+    }
   }
 
   private createLogFromEvent(type: string, data: any): LogEntry {
