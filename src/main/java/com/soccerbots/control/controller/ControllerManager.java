@@ -5,7 +5,6 @@ import net.java.games.input.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.concurrent.*;
 import java.util.List;
@@ -435,9 +434,6 @@ public class ControllerManager {
                     // Force a new scan by clearing static cache if possible
                     Field defaultEnvField = pluginClass.getDeclaredField("defaultEnvironment");
                     defaultEnvField.setAccessible(true);
-                    
-                    // Get current instance
-                    Object currentEnv = defaultEnvField.get(null);
                     
                     // Clear it temporarily
                     defaultEnvField.set(null, null);

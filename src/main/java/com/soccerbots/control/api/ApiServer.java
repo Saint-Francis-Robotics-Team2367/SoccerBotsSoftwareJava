@@ -467,9 +467,10 @@ public class ApiServer {
                 if (currentCount != lastControllerCount) {
                     logger.debug("Controller count changed: {} -> {}", lastControllerCount, currentCount);
                     lastControllerCount = currentCount;
+                    long timestamp = System.currentTimeMillis();
                     broadcastUpdate("controllers_updated", Map.of(
                         "count", currentCount,
-                        "timestamp", System.currentTimeMillis()
+                        "timestamp", timestamp
                     ));
                 }
             } catch (Exception e) {
