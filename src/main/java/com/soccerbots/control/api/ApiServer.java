@@ -30,6 +30,7 @@ public class ApiServer {
     private long matchStartTime = 0;
     private boolean matchRunning = false;
     private final ScheduledExecutorService timerExecutor;
+    private int lastControllerCount = 0;
 
     public ApiServer(RobotManager robotManager, ControllerManager controllerManager, NetworkManager networkManager) {
         this.robotManager = robotManager;
@@ -48,6 +49,7 @@ public class ApiServer {
 
         setupRoutes();
         startTimerBroadcast();
+        startControllerMonitoring();
     }
 
     private void setupRoutes() {
@@ -455,6 +457,25 @@ public class ApiServer {
                 ));
             }
         }, 0, 1, TimeUnit.SECONDS);
+    }
+
+    private void startControllerMonitoring() {
+        // Monitor controller count and broadcast updates when it changes
+        timerExecutor.scheduleAtFixedRate(() -> {
+            try {
+                int currentCount = controllerManager.getConnectedControllerCount();
+                if (currentCount != lastControllerCount) {
+                    logger.debug("Controller count changed: {} -> {}", lastControllerCount, currentCount);
+                    lastControllerCount = currentCount;
+                    broadcastUpdate("controllers_updated", Map.of(
+                        "count", currentCount,
+                        "timestamp", System.currentTimeMillis()
+                    ));
+                }
+            } catch (Exception e) {
+                logger.error("Error monitoring controllers", e);
+            }
+        }, 0, 2, TimeUnit.SECONDS);
     }
 
     public void start() {
