@@ -13,7 +13,7 @@
     "dev:electron": "cd electron && npm start",
     "dev": "concurrently --kill-others \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:electron:wait\"",
     "dev:electron:wait": "wait-on http://localhost:8080/api/health http://localhost:5173 --timeout 60000 && cd electron && npm run electron",
-    "install:all": "cd frontend && npm install && cd ../electron && npm install && cd ../python_backend && pip3 install -r requirements.txt",
+    "install:all": "cd frontend && npm install && cd ../electron && npm install && cd ../python_backend && python3 -m pip install -r requirements.txt",
     "start": "npm run build:all && cd electron && npm start",
     "dist": "npm run build:all && cd electron && npm run build"
   },

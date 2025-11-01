@@ -4,73 +4,56 @@ const { spawn } = require('child_process');
 const isDev = require('electron-is-dev');
 
 let mainWindow;
-let javaProcess;
+let pythonProcess;
 
 const API_PORT = 8080;
 
-function findJavaPath() {
-  // Try to find Java in common locations
-  const { platform } = process;
-
-  if (platform === 'win32') {
-    return 'java'; // Assumes Java is in PATH
-  } else if (platform === 'darwin') {
-    return 'java';
-  } else {
-    return 'java';
+function startPythonBackend() {
+  // Only start Python backend in production mode
+  // In dev mode, it's already started by npm run dev
+  if (isDev) {
+    console.log('[Python Backend] Development mode - backend should already be running via npm run dev');
+    return Promise.resolve();
   }
-}
 
-function startJavaBackend() {
   return new Promise((resolve, reject) => {
-    const javaPath = findJavaPath();
-    const jarPath = isDev
-      ? path.join(__dirname, '..', 'target', 'robotics-control-system-1.0.0-jar-with-dependencies.jar')
-      : path.join(process.resourcesPath, 'backend.jar');
+    const pythonPath = process.platform === 'win32' ? 'python' : 'python3';
+    const scriptPath = path.join(process.resourcesPath, 'python_backend', 'main.py');
 
-    console.log('[Java Backend] Starting backend...');
-    console.log('[Java Backend] JAR path:', jarPath);
+    console.log('[Python Backend] Starting backend...');
+    console.log('[Python Backend] Script path:', scriptPath);
 
-    const nativeLibPath = path.join(__dirname, '..', 'native');
-
-    javaProcess = spawn(javaPath, [
-      `-Djava.library.path=${nativeLibPath}`,
-      '--enable-native-access=ALL-UNNAMED',
-      '-cp',
-      jarPath,
-      'com.soccerbots.control.HeadlessLauncher',
-      API_PORT.toString()
-    ], {
+    pythonProcess = spawn(pythonPath, [scriptPath, API_PORT.toString()], {
       stdio: ['ignore', 'pipe', 'pipe']
     });
 
-    javaProcess.stdout.on('data', (data) => {
-      console.log(`[Java Backend] ${data.toString().trim()}`);
+    pythonProcess.stdout.on('data', (data) => {
+      console.log(`[Python Backend] ${data.toString().trim()}`);
 
       // Check if API server started successfully
       if (data.toString().includes('API server running')) {
-        console.log('[Java Backend] Backend ready!');
+        console.log('[Python Backend] Backend ready!');
         resolve();
       }
     });
 
-    javaProcess.stderr.on('data', (data) => {
-      console.error(`[Java Backend Error] ${data.toString().trim()}`);
+    pythonProcess.stderr.on('data', (data) => {
+      console.error(`[Python Backend Error] ${data.toString().trim()}`);
     });
 
-    javaProcess.on('error', (error) => {
-      console.error('[Java Backend] Failed to start:', error);
+    pythonProcess.on('error', (error) => {
+      console.error('[Python Backend] Failed to start:', error);
       reject(error);
     });
 
-    javaProcess.on('close', (code) => {
-      console.log(`[Java Backend] Process exited with code ${code}`);
+    pythonProcess.on('close', (code) => {
+      console.log(`[Python Backend] Process exited with code ${code}`);
     });
 
     // Timeout in case API server message is missed
     setTimeout(() => {
-      if (javaProcess && !javaProcess.killed) {
-        console.log('[Java Backend] Timeout reached, assuming backend started');
+      if (pythonProcess && !pythonProcess.killed) {
+        console.log('[Python Backend] Timeout reached, assuming backend started');
         resolve();
       }
     }, 5000);
@@ -114,10 +97,10 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  console.log('[Electron] App ready, starting Java backend...');
+  console.log('[Electron] App ready...');
 
   try {
-    await startJavaBackend();
+    await startPythonBackend();
     console.log('[Electron] Creating window...');
     createWindow();
   } catch (error) {
@@ -139,15 +122,15 @@ app.on('activate', () => {
 });
 
 app.on('before-quit', () => {
-  console.log('[Electron] Stopping Java backend...');
-  if (javaProcess) {
-    javaProcess.kill();
+  console.log('[Electron] Stopping Python backend...');
+  if (pythonProcess) {
+    pythonProcess.kill();
   }
 });
 
-// Handle Java process crashes
+// Handle Python process crashes
 process.on('exit', () => {
-  if (javaProcess) {
-    javaProcess.kill();
+  if (pythonProcess) {
+    pythonProcess.kill();
   }
 });
