@@ -1,457 +1,231 @@
 # Project Structure Documentation
 
-This document provides a comprehensive overview of the SoccerBots Control Station project structure, including detailed explanations of each file and its purpose.
+This document provides an overview of the SoccerBots Control Station project structure with the new Python backend.
 
 ## 📁 Directory Overview
 
 ```
 SoccerBotsSoftwareJava/
-├── src/main/java/com/soccerbots/control/     # Main Java source code
-├── src/main/resources/                       # Resources (CSS, configs)
-├── esp32_robot_code/                         # ESP32 firmware
-├── docs/                                     # Documentation
-├── target/                                   # Build output
-├── pom.xml                                   # Maven configuration
-├── README.md                                 # Main documentation
-├── CLAUDE.md                                 # Development instructions
-└── .claude/                                  # Claude Code configuration
+├── python_backend/                       # Python backend (CURRENT)
+│   ├── main.py                           # Entry point
+│   ├── api_server.py                     # Flask REST API + WebSocket
+│   ├── network_manager.py                # UDP networking
+│   ├── robot_manager.py                  # Robot discovery & control
+│   ├── robot.py                          # Robot data models
+│   ├── controller_manager.py             # Controller support
+│   ├── controller_input.py               # Input handling
+│   ├── requirements.txt                  # Python dependencies
+│   └── README.md                         # Backend documentation
+├── frontend/                             # React + TypeScript UI
+│   ├── src/components/                   # React components
+│   ├── src/services/api.ts               # Backend API client
+│   └── package.json                      # Frontend dependencies
+├── electron/                             # Electron wrapper
+│   ├── main.js                           # Main process
+│   ├── preload.js                        # Context bridge
+│   └── package.json                      # Electron dependencies
+├── esp32_robot_firmware/                 # ESP32 Arduino firmware
+│   ├── minibots.ino                      # Main firmware file
+│   ├── minibot.cpp                       # Minibot class implementation
+│   └── minibot.h                         # Minibot class header
+├── legacy/                               # Old Java backend (DEPRECATED)
+│   ├── src/                              # Java source code
+│   ├── pom.xml                           # Maven configuration
+│   └── README.md                         # Legacy documentation
+├── package.json                          # Root build scripts
+└── README.md                             # Main documentation
 ```
 
-## 🎯 Core Java Application (`src/main/java/com/soccerbots/control/`)
+## 🐍 Python Backend Architecture
 
-### Application Entry Point
+### Core Components
 
-#### `RoboticsControlFXApp.java`
-**Purpose**: JavaFX application launcher with Grok theme integration
-**Key Features**:
-- Initializes JavaFX application
-- Loads Grok CSS theme (`grok.css`)
-- Sets up main window (1400x900, min 1200x800)
-- Handles application shutdown and cleanup
-- Configures window properties and styling
+**1. NetworkManager** (`network_manager.py`)
+- Manages UDP sockets for robot communication
+- Handles discovery protocol (port 12345)
+- Sends commands to ESP32 robots (port 2367)
+- Emergency stop broadcasting
 
-**Key Methods**:
-- `start(Stage)` - JavaFX application initialization
-- `main(String[])` - Application entry point
+**2. RobotManager** (`robot_manager.py`)
+- Robot discovery via UDP pings
+- Connection management
+- Command transmission
+- Game state control (standby/teleop)
 
----
+**3. ControllerManager** (`controller_manager.py`)
+- Controller detection via pygame
+- Input polling at 60Hz
+- Controller-robot pairing
+- Emergency stop control
 
-## 🎨 User Interface (`gui/` package)
-
-### Main Window Management
-
-#### `MainWindow.java`
-**Purpose**: Primary application window with Grok-inspired navigation
-**Key Features**:
-- BorderPane layout with header navigation
-- Pill-shaped navigation buttons with hover animations
-- Content area with smooth panel transitions
-- Emergency stop functionality
-- Status bar with live connection counts
-- Grok theme integration throughout
-
-**Key Components**:
-- Header bar with navigation pills
-- Content area with fade/scale transitions
-- Status bar with real-time updates
-- Emergency stop button with confirmation
-
-**Key Methods**:
-- `createNavigationBar()` - Grok-styled header
-- `showPanel()` - Animated panel switching
-- `handleEmergencyStop()` - Safety control
-
-### Robot Management
-
-#### `RobotPanel.java`
-**Purpose**: ESP32 robot management with modern card-based interface
-**Key Features**:
-- WATCHTOWER network status display
-- Manual robot addition dialog
-- Robot cards with live status indicators
-- Teleop mode control
-- Grok-themed card animations
-
-**Key Components**:
-- Network status section with connection info
-- Add robot dialog with name/IP inputs
-- Robot cards with status indicators and actions
-- Teleop control toggle
-
-**Key Methods**:
-- `createHeader()` - Network status and controls
-- `createRobotCard()` - Individual robot display
-- `showAddRobotDialog()` - Manual robot addition
-- `toggleTeleopMode()` - Game state control
-
-### Controller Management
-
-#### `ControllerPanel.java`
-**Purpose**: USB controller detection and pairing interface
-**Key Features**:
-- Automatic controller detection
-- Controller cards with live input display
-- Robot pairing interface
-- Refresh functionality
-- Grok-styled components
-
-**Key Components**:
-- Controller detection status
-- Controller cards with input visualization
-- Pairing controls and indicators
-
-**Key Methods**:
-- `createControllerCards()` - Dynamic controller display
-- `updateControllerDisplay()` - Live status updates
-- `refreshControllers()` - Manual detection trigger
-
-### Network Configuration
-
-#### `NetworkPanel.java`
-**Purpose**: WATCHTOWER network monitoring and connection testing
-**Key Features**:
-- Network status monitoring
-- ESP32 communication port display
-- Direct robot connection testing
-- Connection status indicators
-- Grok-themed status displays
-
-**Key Components**:
-- Network status section
-- ESP32 communication info
-- Direct connection testing
-
-**Key Methods**:
-- `updateNetworkStatus()` - Live network monitoring
-- `connectToRobot()` - Direct connection testing
-
-### System Monitoring
-
-#### `MonitoringPanel.java`
-**Purpose**: System performance and status monitoring
-**Key Features**:
-- Real-time system metrics
-- Network performance monitoring
-- Robot communication status
-- Controller input monitoring
-
-#### `SettingsPanel.java`
-**Purpose**: Application configuration and preferences
-**Key Features**:
-- Theme customization options
-- Network settings
-- Controller configuration
-- Application preferences
-
-### Dialog Components
-
-#### `WiFiConfigDialog.java`
-**Purpose**: ESP32 network information display (modified for ESP32)
-**Key Features**:
-- ESP32 network requirements info
-- WATCHTOWER connection status
-- Informational dialog for robot setup
-- Grok-themed dialog styling
-
----
-
-## 🌐 Network Communication (`network/` package)
-
-#### `NetworkManager.java`
-**Purpose**: ESP32 UDP communication and network management
-**Key Features**:
-- ESP32 binary protocol (port 2367)
-- WATCHTOWER network detection
-- UDP packet transmission
-- Network status monitoring
-- Binary command encoding
-
-**Protocol Details**:
-- **Port**: 2367 for ESP32 communication
-- **Expected Network**: WATCHTOWER
-- **Packet Format**: 24-byte binary (16 + 6 + 2)
-- **Command Types**: Movement commands and game status
-
-**Key Methods**:
-- `sendRobotCommand()` - Binary UDP transmission
-- `sendGameStatus()` - Text-based status commands
-- `isConnectedToExpectedNetwork()` - WATCHTOWER verification
-- `checkCurrentNetworkStatus()` - Windows network detection
-
----
-
-## 🤖 Robot Management (`robot/` package)
-
-### Core Robot Management
-
-#### `RobotManager.java`
-**Purpose**: ESP32 robot lifecycle and communication management
-**Key Features**:
-- Manual robot addition/removal
-- Game state management (teleop/standby)
-- Controller input processing
-- Emergency stop functionality
-- Robot status tracking
-
-**Game States**:
-- **Standby**: No movement allowed
-- **Teleop**: Full controller input enabled
-
-**Key Methods**:
-- `addRobot()` - Manual robot registration
-- `sendMovementCommand()` - Normalized input to ESP32
-- `setGameState()` - Global robot control
-- `emergencyStopAll()` - Safety shutdown
+**4. ApiServer** (`api_server.py`)
+- Flask REST API endpoints
+- WebSocket event broadcasting
+- Match timer management
+- Real-time status updates
 
 ### Data Models
 
-#### `Robot.java`
-**Purpose**: Individual robot data model and status tracking
-**Key Features**:
-- Robot identification (name, ID, IP)
-- Connection status tracking
-- Last seen timestamp
-- Controller pairing information
+**Robot** (`robot.py`)
+- Robot state and properties
+- Connection tracking
+- Controller pairing
 
-**Key Properties**:
-- `name` - Display name
-- `id` - Unique identifier
-- `ipAddress` - Network address
-- `lastSeenTime` - Connection tracking
-- `pairedControllerId` - Controller assignment
-
-#### `ESP32Command.java`
-**Purpose**: Binary command structure for ESP32 communication
-**Key Features**:
-- Controller input normalization (-1.0 to 1.0 → 0-255)
-- PlayStation-style button mapping
+**ESP32Command** (`robot.py`)
+- Command structure for ESP32
+- Input normalization (-1.0 to 1.0 → 0-255)
 - Binary packet construction
-- Movement threshold detection
 
-**Packet Structure** (24 bytes):
-```
-Bytes 0-15:  Robot name (null-padded)
-Bytes 16-17: Left stick (X, Y)
-Bytes 18-19: Right stick (X, Y)
-Bytes 20-21: Reserved axes
-Byte 22:     Button flags (Cross, Circle, Square, Triangle)
-Byte 23:     Reserved buttons
-```
-
-**Key Methods**:
-- `fromControllerInput()` - Normalize controller data
-- `createStopCommand()` - Generate neutral command
-- `hasMovement()` - Detect significant input
-
----
-
-## 🎮 Controller Input (`controller/` package)
-
-### Input Management
-
-#### `ControllerManager.java`
-**Purpose**: USB controller detection, polling, and input processing
-**Key Features**:
-- Automatic controller detection (DirectInput)
-- 60Hz input polling (16ms intervals)
-- Controller-robot pairing management
-- Emergency stop integration
-- Multi-controller support
-
-**Supported Controllers**:
-- Xbox One/Series controllers
-- PlayStation 4/5 controllers
-- Generic DirectInput gamepads
-
-**Key Methods**:
-- `detectControllers()` - USB device scanning
-- `pollControllerInputs()` - Real-time input reading
-- `pairControllerWithRobot()` - Assignment management
-- `activateEmergencyStop()` - Safety control
-
-### Controller Abstraction
-
-#### `GameController.java`
-**Purpose**: Individual controller wrapper and state management
-**Key Features**:
-- Controller identification
-- Input state caching
-- Connection status monitoring
+**ControllerInput** (`controller_input.py`)
+- Normalized controller input
+- Deadzone handling
 - Button state tracking
 
-#### `ControllerInput.java`
-**Purpose**: Normalized input data structure
-**Key Features**:
-- Stick position normalization (-1.0 to 1.0)
-- Button state management (16 buttons)
-- Deadzone application (10% default)
-- Movement threshold detection (5% default)
+**GameController** (`controller_input.py`)
+- Controller abstraction
+- Type identification
 
-**Input Mapping**:
-- **Left Stick**: Forward/backward, sideways movement
-- **Right Stick**: Rotation, reserved axis
-- **Buttons**: 16-button array with hash-based mapping
-- **Triggers**: Analog trigger values
+## 🎨 Frontend Architecture
 
----
+### React Components
 
-## 🎨 Resources (`src/main/resources/`)
+**ConnectionPanel** - Robot connection management
+**NetworkAnalysis** - Real-time charts
+**ControlPanel** - Emergency stop
+**TerminalMonitor** - Live logs
+**ServiceLog** - Event tracking
 
-### Styling
+### API Integration
 
-#### `styles/grok.css`
-**Purpose**: Grok AI-inspired theme implementation
-**Key Features**:
-- CSS variables for consistent theming
-- Dark-mode color palette
-- Modern typography (Inter font family)
-- Smooth animations (150-200ms)
-- Responsive design patterns
+**API Service** (`services/api.ts`)
+- REST endpoint wrapper
+- WebSocket connection
+- Event handling
 
-**Color System**:
-```css
--primary-bg: #0A0A0A        /* Deep black background */
--secondary-bg: #1A1A1A      /* Card backgrounds */
--tertiary-bg: #333333       /* Button backgrounds */
--accent-blue: #1D9BF0       /* Interactive elements */
--success-green: #22C55E     /* Success states */
--warning-yellow: #EAB308    /* Warning states */
--error-red: #EF4444         /* Error states */
+## 🤖 ESP32 Firmware
+
+### Minibot Class
+
+**minibot.cpp/minibot.h**
+- WiFi connection management
+- UDP command listening (port 2367)
+- Discovery ping broadcasting (port 12345)
+- Motor control interface
+- Emergency stop handling
+- Game state processing
+
+## 📡 Communication Protocol
+
+### Discovery (Port 12345)
+- Robots broadcast: `DISCOVER:<robotId>:<IP>`
+- Backend listens passively
+- Maintains discovered robots list
+
+### Commands (Port 2367)
+
+**Binary Movement (24 bytes):**
+```
+Bytes 0-15:  Robot name (null-padded)
+Bytes 16-19: Axes (leftX, leftY, rightX, rightY) [0-255]
+Bytes 20-21: Unused
+Byte 22:     Buttons (cross, circle, square, triangle)
+Byte 23:     Unused
 ```
 
-**Component Classes**:
-- `.grok-card` - Main container styling
-- `.grok-button` - Interactive buttons with variants
-- `.grok-text-field` - Modern input fields
-- `.grok-title`, `.grok-subtitle`, `.grok-body` - Typography hierarchy
+**Text Commands:**
+- `<name>:teleop` - Enable movement
+- `<name>:standby` - Disable movement
+- `ESTOP` - Emergency stop (broadcast)
+- `ESTOP_OFF` - Release emergency stop
 
----
+## 🔌 API Endpoints
 
-## 🔧 ESP32 Firmware (`esp32_robot_code/`)
+### Health & Robots
+- `GET /api/health` - Health check
+- `GET /api/robots` - List all robots
+- `POST /api/robots/{id}/connect` - Connect robot
+- `POST /api/robots/{id}/disconnect` - Disconnect robot
 
-### Robot Firmware
+### Controllers
+- `GET /api/controllers` - List controllers
+- `POST /api/controllers/{id}/pair/{robotId}` - Pair controller
+- `POST /api/controllers/{id}/unpair` - Unpair controller
 
-#### `esp32_robot_code/` (Directory)
-**Purpose**: ESP32 Arduino firmware for robot communication
-**Key Features**:
-- WATCHTOWER network connectivity
-- UDP command listener (port 2367)
-- Binary protocol parsing
-- Movement command processing
-
-**Note**: This directory contains the ESP32 firmware provided by the user. The Java application is designed to work specifically with this firmware's communication protocol.
-
----
-
-## 🛠️ Build Configuration
-
-### Maven Configuration
-
-#### `pom.xml`
-**Purpose**: Maven build configuration with JavaFX dependencies
-**Key Features**:
-- JavaFX 21.0.1 integration
-- JInput library for controller support
-- SLF4J + Logback logging
-- Assembly plugin for fat JAR creation
-- Java 17 target compatibility
-
-**Dependencies**:
-- `javafx-controls` - UI components
-- `javafx-fxml` - FXML support
-- `jinput` - Controller input
-- `slf4j-api` + `logback-classic` - Logging
-- `jackson-databind` - JSON processing
-
-**Build Outputs**:
-- `robotics-control-system-1.0.0.jar` - Standard JAR
-- `robotics-control-system-1.0.0-jar-with-dependencies.jar` - Executable JAR
-
----
-
-## 📚 Documentation
-
-#### `README.md`
-**Purpose**: Main project documentation with Grok theme information
-**Content**: Features, setup, usage, troubleshooting
-
-#### `CLAUDE.md`
-**Purpose**: Development instructions for Claude Code
-**Content**: Project overview, build commands, architecture notes
-
-#### `PROJECT_STRUCTURE.md` (This file)
-**Purpose**: Detailed file-by-file project explanation
-
----
-
-## 🎯 Key Design Patterns
-
-### Architecture Patterns
-
-1. **MVC Pattern**: Clear separation of UI (View), business logic (Controller), and data (Model)
-2. **Observer Pattern**: Real-time updates for robot and controller status
-3. **Strategy Pattern**: Different controller input mappings
-4. **Command Pattern**: ESP32 command structure and execution
-
-### JavaFX Patterns
-
-1. **FXML-less Approach**: Programmatic UI construction for better control
-2. **CSS Theming**: Centralized styling with CSS variables
-3. **Animation Framework**: Timeline-based smooth transitions
-4. **Event-Driven**: Reactive UI updates based on system events
-
-### Network Patterns
-
-1. **UDP Communication**: Low-latency robot control
-2. **Binary Protocol**: Efficient data transmission
-3. **Heartbeat Monitoring**: Connection status tracking
-4. **Broadcast Discovery**: Network device detection
-
----
+### Emergency & Match
+- `POST /api/emergency-stop` - Activate E-stop
+- `POST /api/match/start` - Start match
+- `POST /api/match/stop` - Stop match
+- `GET /api/match/timer` - Get timer state
 
 ## 🔄 Data Flow
 
 ### Controller Input Flow
 ```
-USB Controller → JInput → ControllerManager →
+USB Controller → pygame → ControllerManager →
 ControllerInput → RobotManager → ESP32Command →
 NetworkManager → UDP → ESP32 Robot
 ```
 
+### Discovery Flow
+```
+ESP32 Robot → UDP Broadcast (port 12345) →
+NetworkManager → RobotManager → Discovered Robots →
+API Server → WebSocket → Frontend
+```
+
 ### UI Update Flow
 ```
-System Events → Manager Classes → JavaFX Platform.runLater() →
-UI Components → CSS Animations → Visual Updates
+System Events → Manager Classes → API Server →
+WebSocket → Frontend → React State → UI Update
 ```
 
-### Network Status Flow
+## 🛠️ Build & Deployment
+
+### Development
+```bash
+npm run dev  # Start all components
 ```
-Network Interface → NetworkManager → Status Updates →
-UI Panels → Real-time Display
+
+### Production
+```bash
+npm run build:all  # Build backend + frontend
+npm start          # Run production build
 ```
+
+### Backend Only
+```bash
+cd python_backend
+python3 main.py
+```
+
+## 📝 Configuration Files
+
+**package.json** - Root build scripts
+**requirements.txt** - Python dependencies
+**vite.config.ts** - Frontend build config
+**electron/package.json** - Electron config
+
+## 🔒 Legacy Java Code
+
+The original Java backend has been moved to the `legacy/` directory. It is deprecated but preserved for reference. See `legacy/README.md` for details.
+
+**Key Differences:**
+| Feature | Python Backend | Java Backend |
+|---------|---------------|--------------|
+| Runtime | Python 3.8+ | Java 17+ JVM |
+| Dependencies | pip | Maven |
+| Startup time | ~2s | ~5-10s |
+| Memory | ~50-100MB | ~200-300MB |
+| Controller lib | pygame | JInput |
+
+## 📚 Additional Resources
+
+- **python_backend/README.md** - Detailed Python backend documentation
+- **legacy/README.md** - Legacy Java backend information
+- **README.md** - Main project documentation
+- **QUICKSTART.md** - Quick start guide
+- **ROBOT_PROTOCOL.md** - Detailed protocol specification
 
 ---
 
-## 🚀 Deployment
-
-### Build Artifacts
-
-1. **Development JAR**: `target/robotics-control-system-1.0.0.jar`
-   - Requires external dependencies
-   - For development and testing
-
-2. **Production JAR**: `target/robotics-control-system-1.0.0-jar-with-dependencies.jar`
-   - Self-contained executable
-   - Includes all dependencies
-   - Ready for distribution
-
-### Runtime Requirements
-
-- **Java 17+** with JavaFX support
-- **DirectInput drivers** for controller support
-- **Network access** to WATCHTOWER WiFi
-- **UDP port 2367** availability for ESP32 communication
-
----
-
-This structure provides a modern, maintainable codebase with clear separation of concerns, robust error handling, and a professional user interface inspired by Grok AI design principles.
+**Current Architecture: Python Backend + React Frontend + Electron Wrapper** ✨
