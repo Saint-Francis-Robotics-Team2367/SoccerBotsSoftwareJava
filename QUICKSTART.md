@@ -3,9 +3,9 @@
 ## One-Command Development Setup
 
 ### Prerequisites
-- Java 11+ installed
+- Python 3.8+ installed
 - Node.js 18+ installed
-- Maven installed
+- pip (Python package manager)
 
 ### First Time Setup
 
@@ -15,7 +15,10 @@
 npm run install:all
 ```
 
-This installs dependencies for both the frontend and the Electron app.
+This installs dependencies for:
+- Frontend (React + Vite)
+- Electron app
+- Python backend (Flask, pygame, etc.)
 
 ### Run the Application (Single Command!)
 
@@ -24,7 +27,7 @@ npm run dev
 ```
 
 This single command will:
-1. ✅ Start the Java backend (API server on port 8080)
+1. ✅ Start the Python backend (API server on port 8080)
 2. ✅ Start the React frontend dev server (Vite on port 5173)
 3. ✅ Wait for both to be ready
 4. ✅ Open the native Electron desktop window
@@ -34,7 +37,7 @@ This single command will:
 ### What You'll See
 
 1. **Console output** showing:
-   - `[Java Backend]` - Backend logs
+   - `[Python Backend]` - Backend logs
    - `[Frontend]` - Vite dev server
    - `[Electron]` - Electron startup
 

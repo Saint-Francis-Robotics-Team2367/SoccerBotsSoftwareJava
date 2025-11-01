@@ -1,25 +1,25 @@
 # SoccerBots Control Station
 
-A modern robot control system for ESP32-based soccer robots with multiple interface options: a sleek Electron-based React UI, JavaFX GUI, and a lightweight 3D simulator.
+A modern robot control system for ESP32-based soccer robots with a sleek Electron-based React UI and Python backend.
 
-![System Architecture](https://img.shields.io/badge/Platform-ESP32%20%2B%20React%20%2B%20Java-blue)
+![System Architecture](https://img.shields.io/badge/Platform-ESP32%20%2B%20React%20%2B%20Python-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
-![Version](https://img.shields.io/badge/Version-1.0.0-orange)
+![Version](https://img.shields.io/badge/Version-2.0.0-orange)
 
 ## 🚀 Overview
 
 This project provides a complete robot control solution with:
-- **Native Desktop App** - Modern React UI powered by Electron + Java backend
-- **JavaFX GUI** - Classic desktop interface (legacy)
-- **3D Simulator** - Lightweight robot simulator with controller support
-- **Headless API Mode** - REST API + WebSocket server for custom frontends
+- **Native Desktop App** - Modern React UI powered by Electron + Python backend
+- **Python Backend** - Lightweight, cross-platform REST API + WebSocket server
+- **PlayStation Controller Support** - Full PS4/PS5 controller support via pygame
+- **Headless API Mode** - Run backend standalone for custom frontends
 
 ## 📋 Requirements
 
 ### All Modes
-- **Java**: JDK 17 or later
-- **Maven**: 3.8+ for building
-- **Controllers**: USB game controllers (Xbox, PlayStation, etc.) via JInput
+- **Python**: 3.8 or later
+- **pip**: Python package manager
+- **Controllers**: USB game controllers (PlayStation, Xbox, etc.) via pygame
 
 ### Native Desktop App (Electron + React)
 - **Node.js**: 18+ and npm
@@ -92,7 +92,7 @@ npm run install:all
 npm run dev
 ```
 This automatically:
-- ✅ Starts Java backend (port 8080)
+- ✅ Starts Python backend (port 8080)
 - ✅ Starts React dev server (port 5173)
 - ✅ Opens native Electron window
 - ✅ Hot reloads on code changes
@@ -108,8 +108,9 @@ npm run dist
 
 **Manual Development** (if you need separate terminals):
 ```bash
-# Terminal 1: Java backend with API
+# Terminal 1: Python backend with API
 npm run dev:backend
+# Or directly: cd python_backend && python3 main.py
 
 # Terminal 2: React frontend (Vite dev server)
 npm run dev:frontend
@@ -124,40 +125,17 @@ npm run dist
 # Creates installers in electron/dist/
 ```
 
-### Option 2: JavaFX GUI (Legacy)
-
-Traditional desktop interface using Java Swing/JavaFX.
-
-```bash
-# Build and run
-mvn clean compile
-mvn javafx:run
-```
-
-### Option 3: 3D Simulator
-
-Lightweight robot simulator for testing without hardware.
-
-```bash
-# Compile
-mvn clean compile assembly:single
-
-# Run simulator
-java -cp target/robotics-control-system-1.0.0-jar-with-dependencies.jar \
-  com.soccerbots.control.simulator.SimulatorApp
-```
-
-### Option 4: Headless API Mode
+### Option 2: Headless API Mode
 
 Run backend with HTTP REST API + WebSocket for custom frontends.
 
 ```bash
-# Build backend
-mvn clean compile assembly:single
-
 # Run headless (API on port 8080)
-java -cp target/robotics-control-system-1.0.0-jar-with-dependencies.jar \
-  com.soccerbots.control.HeadlessLauncher
+cd python_backend
+python3 main.py
+
+# Or specify custom port
+python3 main.py 9090
 ```
 
 ## 🎨 Native Desktop App Features
@@ -169,11 +147,12 @@ java -cp target/robotics-control-system-1.0.0-jar-with-dependencies.jar \
 - **Terminal Monitor** - Live command output and system logs
 - **Service Log** - Event tracking with timestamps and severity levels
 
-### Backend API
+### Python Backend API
 - **REST API** - Full robot/controller/network management
 - **WebSocket** - Real-time updates and event streaming
 - **Auto-Discovery** - Finds robots on network via UDP broadcast
-- **Controller Support** - Automatic USB controller detection via JInput
+- **Controller Support** - Automatic USB controller detection via pygame
+- **Cross-Platform** - Works on Windows, macOS, and Linux
 
 ### Real-Time Features
 - Live robot status updates
@@ -186,32 +165,15 @@ java -cp target/robotics-control-system-1.0.0-jar-with-dependencies.jar \
 
 ```
 SoccerBotsSoftwareJava/
-├── src/main/java/com/soccerbots/control/
-│   ├── api/                          # HTTP REST API & WebSocket
-│   │   └── ApiServer.java            # Javalin server with endpoints
-│   ├── controller/                   # Game controller input
-│   │   ├── ControllerManager.java    # USB controller handling
-│   │   ├── GameController.java       # Controller abstraction
-│   │   └── ControllerInput.java      # Input normalization
-│   ├── network/                      # WiFi and UDP networking
-│   │   └── NetworkManager.java       # WiFi hosting, UDP comm
-│   ├── robot/                        # Robot management
-│   │   ├── RobotManager.java         # Discovery, pairing, commands
-│   │   ├── Robot.java                # Robot data model
-│   │   └── RobotCommand.java         # JSON command structure
-│   ├── gui/                          # JavaFX GUI (legacy)
-│   │   ├── MainWindow.java           # Main window
-│   │   ├── RobotPanel.java           # Robot management
-│   │   ├── ControllerPanel.java      # Controller pairing
-│   │   └── NetworkPanel.java         # Network status
-│   ├── simulator/                    # 3D Robot Simulator
-│   │   ├── SimulatorApp.java         # Main simulator window
-│   │   ├── SimulatorRenderer.java    # 3D rendering
-│   │   ├── SimulatorWorld.java       # Physics world
-│   │   └── SimulatedRobot.java       # Robot physics
-│   ├── HeadlessLauncher.java         # API mode entry point
-│   ├── Launcher.java                 # JavaFX GUI launcher
-│   └── RoboticsControlApp.java       # Swing GUI launcher
+├── python_backend/                   # Python backend (NEW!)
+│   ├── main.py                       # Entry point
+│   ├── api_server.py                 # Flask REST API + WebSocket
+│   ├── network_manager.py            # UDP networking
+│   ├── robot_manager.py              # Robot discovery & control
+│   ├── robot.py                      # Robot data models
+│   ├── controller_manager.py         # Controller support
+│   ├── controller_input.py           # Input handling
+│   └── requirements.txt              # Python dependencies
 ├── frontend/                         # React + TypeScript UI
 │   ├── src/
 │   │   ├── components/               # React components
@@ -227,14 +189,16 @@ SoccerBotsSoftwareJava/
 │   ├── package.json
 │   └── vite.config.ts
 ├── electron/                         # Electron wrapper
-│   ├── main.js                       # Main process (launches Java)
+│   ├── main.js                       # Main process (launches Python)
 │   ├── preload.js                    # Context bridge
 │   └── package.json
 ├── esp32_robot_firmware/             # ESP32 Arduino firmware
+├── legacy/                           # Old Java backend (deprecated)
+│   ├── src/                          # Java source code
+│   ├── pom.xml                       # Maven config
+│   └── README.md                     # Legacy documentation
 ├── package.json                      # Root build scripts
-├── pom.xml                           # Maven configuration
-├── README.md                         # This file
-└── ELECTRON_APP_README.md            # Detailed Electron app guide
+└── README.md                         # This file
 ```
 
 ## 🔌 Backend API Reference
@@ -360,6 +324,11 @@ npm start
 ```bash
 # Install all dependencies (first time only)
 npm run install:all
+
+# This installs:
+# - Frontend dependencies (React, Vite, etc.)
+# - Electron dependencies
+# - Python backend dependencies (Flask, pygame, etc.)
 ```
 
 ### Running in Development
@@ -368,12 +337,13 @@ npm run install:all
 ```bash
 npm run dev
 ```
-Starts backend + frontend + Electron in one command! Opens native window automatically.
+Starts Python backend + frontend + Electron in one command! Opens native window automatically.
 
 **Manual Control (if needed):**
 ```bash
-# Terminal 1: Backend API
+# Terminal 1: Python Backend API
 npm run dev:backend
+# Or: cd python_backend && python3 main.py
 
 # Terminal 2: Frontend (Vite)
 npm run dev:frontend
@@ -382,14 +352,11 @@ npm run dev:frontend
 npm run dev:electron
 ```
 
-**JavaFX GUI:**
+**Legacy Java Backend (deprecated):**
 ```bash
-mvn javafx:run
-```
-
-**3D Simulator:**
-```bash
-mvn exec:java -Dexec.mainClass="com.soccerbots.control.simulator.SimulatorApp"
+# If you need to run the old Java backend:
+npm run dev:backend:legacy
+# Or: cd legacy && mvn exec:java -Dexec.mainClass="com.soccerbots.control.HeadlessLauncher"
 ```
 
 ### Building for Distribution
@@ -400,10 +367,11 @@ npm run dist
 # Output: electron/dist/ (platform-specific installers)
 ```
 
-**Standalone JAR:**
+**Standalone Python Backend:**
 ```bash
-mvn clean compile assembly:single
-# Output: target/robotics-control-system-1.0.0-jar-with-dependencies.jar
+cd python_backend
+python3 main.py
+# Runs on http://localhost:8080
 ```
 
 ## 🐛 Troubleshooting
@@ -411,8 +379,9 @@ mvn clean compile assembly:single
 ### Native Desktop App
 
 **Backend won't start:**
-- Ensure Java 17+ installed: `java -version`
+- Ensure Python 3.8+ installed: `python3 --version`
 - Check port 8080 is available
+- Install dependencies: `cd python_backend && pip3 install -r requirements.txt`
 - View logs in Electron DevTools console
 
 **Frontend won't load:**
@@ -427,10 +396,16 @@ mvn clean compile assembly:single
 
 ### Controllers Not Detected
 
-- Install JInput native libraries (automatic with Maven)
-- Windows: Ensure DirectInput drivers installed
+- **Linux**: Ensure user has access to `/dev/input` devices
+  ```bash
+  sudo usermod -a -G input $USER
+  # Log out and back in
+  ```
+- **Windows**: Controllers should work automatically with pygame
+- **macOS**: May need to install additional drivers for some controllers
 - Try refreshing controller list in app
 - Check USB connection and permissions
+- Verify pygame is installed: `python3 -c "import pygame; print('OK')"`
 
 ### Robots Not Discovered
 
@@ -523,9 +498,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - **Figma Community** - RobotControlDesktopApp design template
 - **React & Electron** - Modern desktop framework
-- **JavaFX & Swing** - Classic Java UI frameworks
-- **JInput Library** - Game controller support
-- **Jackson & Javalin** - JSON processing and web framework
+- **Python & Flask** - Backend framework
+- **pygame** - Cross-platform game controller support
 - **ESP32 Community** - Excellent hardware documentation
 
 ## 📞 Support
@@ -536,8 +510,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 |------|---------|
 | **Development (one command!)** | `npm run dev` |
 | Run native app (production) | `npm start` |
-| Run JavaFX GUI | `mvn javafx:run` |
-| Run simulator | `java -cp target/*-jar-with-dependencies.jar com.soccerbots.control.simulator.SimulatorApp` |
+| Run Python backend only | `cd python_backend && python3 main.py` |
+| Run legacy Java backend | `npm run dev:backend:legacy` |
 | Build everything | `npm run build:all` |
 | Flash ESP32 firmware | Open `esp32_robot_firmware/minibots.ino` in Arduino IDE → Upload |
 | Check robot status | Arduino Serial Monitor @ 115200 baud |
@@ -558,5 +532,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Choose your interface: Modern React UI, Classic JavaFX, or Lightweight Simulator** ✨
-**Protocol: Automatic discovery with dynamic port assignment - zero configuration!** 🤖
+**Modern React UI + Python Backend = Simple, Powerful Robot Control** ✨
+**Protocol: Automatic discovery with static port assignment - zero configuration!** 🤖
