@@ -1,4 +1,5 @@
-// API service for communicating with Java backend
+// API service for communicating with Python backend
+import { io, Socket } from 'socket.io-client';
 
 const API_BASE_URL = (window as any).electron?.apiUrl || 'http://localhost:8080';
 
@@ -45,28 +46,29 @@ export interface MatchTimer {
 }
 
 class ApiService {
-  private ws: WebSocket | null = null;
+  private socket: Socket | null = null;
   private wsCallbacks: Map<string, Set<(data: any) => void>> = new Map();
   private logBuffer: LogEntry[] = [];
   private logListeners: Set<(logs: LogEntry[]) => void> = new Set();
 
-  // Initialize WebSocket connection
+  // Initialize Socket.IO connection
   connectWebSocket() {
-    const wsUrl = API_BASE_URL.replace('http', 'ws') + '/ws';
+    this.socket = io(API_BASE_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 3000
+    });
 
-    this.ws = new WebSocket(wsUrl);
+    this.socket.on('connect', () => {
+      console.log('[Socket.IO] Connected to backend');
+    });
 
-    this.ws.onopen = () => {
-      console.log('[WebSocket] Connected to backend');
-    };
-
-    this.ws.onmessage = (event) => {
+    this.socket.on('update', (message: any) => {
       try {
-        const message = JSON.parse(event.data);
         const { type, data } = message;
 
         // Handle log events
-        if (type.includes('robot_') || type.includes('emergency') || type.includes('controller')) {
+        if (type.includes('robot_') || type.includes('emergency') || type.includes('controller') || type.includes('match_')) {
           this.addLog(this.createLogFromEvent(type, data));
         }
 
@@ -76,18 +78,17 @@ class ApiService {
           callbacks.forEach(cb => cb(data));
         }
       } catch (error) {
-        console.error('[WebSocket] Failed to parse message:', error);
+        console.error('[Socket.IO] Failed to parse message:', error);
       }
-    };
+    });
 
-    this.ws.onerror = (error) => {
-      console.error('[WebSocket] Error:', error);
-    };
+    this.socket.on('connect_error', (error) => {
+      console.error('[Socket.IO] Connection error:', error);
+    });
 
-    this.ws.onclose = () => {
-      console.log('[WebSocket] Disconnected, reconnecting in 3s...');
-      setTimeout(() => this.connectWebSocket(), 3000);
-    };
+    this.socket.on('disconnect', () => {
+      console.log('[Socket.IO] Disconnected, reconnecting...');
+    });
   }
 
   private createLogFromEvent(type: string, data: any): LogEntry {
@@ -121,6 +122,22 @@ class ApiService {
       case 'robots_refreshing':
         level = 'info';
         message = 'Scanning for robots...';
+        break;
+      case 'match_start':
+        level = 'success';
+        message = 'Match started!';
+        break;
+      case 'match_stop':
+        level = 'info';
+        message = 'Match stopped';
+        break;
+      case 'match_end':
+        level = 'warning';
+        message = 'Match ended - time expired!';
+        break;
+      case 'match_reset':
+        level = 'info';
+        message = 'Match timer reset';
         break;
       default:
         level = 'info';
