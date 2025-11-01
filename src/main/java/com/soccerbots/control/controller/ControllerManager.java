@@ -5,6 +5,7 @@ import net.java.games.input.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.*;
 import java.util.List;
 import java.util.ArrayList;
@@ -36,7 +37,8 @@ public class ControllerManager {
     }
     
     private void startControllerDetection() {
-        scheduledExecutor.scheduleWithFixedDelay(this::detectControllers, 0, 5, TimeUnit.SECONDS);
+        // Scan more frequently (every 3 seconds) to detect newly connected controllers
+        scheduledExecutor.scheduleWithFixedDelay(this::detectControllers, 0, 3, TimeUnit.SECONDS);
     }
     
     private void detectControllers() {
@@ -47,6 +49,9 @@ public class ControllerManager {
                 logger.warn("Controller environment is not available");
                 return;
             }
+
+            // Try to force a rescan for hot-plugged devices
+            forceEnvironmentRescan(env);
 
             Controller[] controllers;
             try {
@@ -66,7 +71,7 @@ public class ControllerManager {
                 return;
             }
 
-            logger.info("Scanning {} total input devices from JInput", controllers.length);
+            logger.debug("Scanning {} total input devices from JInput", controllers.length);
 
             for (Controller controller : controllers) {
                 if (controller == null) {
@@ -340,7 +345,7 @@ public class ControllerManager {
             // Force a complete environment refresh for newly connected devices
             logger.info("Refreshing controller environment...");
 
-            // Try to reinitialize the controller environment if possible
+            // Get the default environment
             ControllerEnvironment env = ControllerEnvironment.getDefaultEnvironment();
 
             if (env == null) {
@@ -352,6 +357,16 @@ public class ControllerManager {
 
             // Clear existing controllers first
             logger.info("Current controller count before refresh: {}", connectedControllers.size());
+
+            // Force environment refresh using reflection
+            // JInput doesn't expose a public rescan method, so we need to use reflection
+            boolean refreshSuccessful = forceEnvironmentRescan(env);
+            
+            if (refreshSuccessful) {
+                logger.info("Environment rescan successful");
+            } else {
+                logger.warn("Environment rescan may not have been successful - using standard detection");
+            }
 
             // Perform detection
             detectControllers();
@@ -366,6 +381,86 @@ public class ControllerManager {
         } catch (Exception e) {
             logger.error("Error during manual controller refresh", e);
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Force the JInput environment to rescan for new controllers.
+     * Uses reflection to access internal methods since JInput doesn't expose a public API for this.
+     */
+    private boolean forceEnvironmentRescan(ControllerEnvironment env) {
+        try {
+            // Try different approaches based on the environment implementation
+            
+            // Approach 1: Try to access and clear the cached controllers array
+            try {
+                Field controllersField = env.getClass().getDeclaredField("controllers");
+                controllersField.setAccessible(true);
+                controllersField.set(env, null); // Clear the cache
+                logger.debug("Cleared cached controllers array");
+            } catch (NoSuchFieldException e) {
+                logger.debug("No 'controllers' field found in environment");
+            } catch (SecurityException e) {
+                logger.debug("Security restriction prevented clearing controllers cache: {}", e.getMessage());
+            } catch (IllegalAccessException e) {
+                logger.debug("Access denied to controllers field: {}", e.getMessage());
+            }
+
+            // Approach 2: Try to invoke a rescan method if it exists
+            try {
+                java.lang.reflect.Method rescanMethod = env.getClass().getDeclaredMethod("rescanControllers");
+                rescanMethod.setAccessible(true);
+                rescanMethod.invoke(env);
+                logger.debug("Invoked rescanControllers method");
+                return true;
+            } catch (NoSuchMethodException e) {
+                logger.debug("No 'rescanControllers' method found");
+            } catch (SecurityException e) {
+                logger.debug("Security restriction prevented invoking rescan: {}", e.getMessage());
+            } catch (Exception e) {
+                logger.debug("Failed to invoke rescan method: {}", e.getMessage());
+            }
+
+            // Approach 3: For Windows DirectInput environment, try to recreate the plugin
+            String envClassName = env.getClass().getSimpleName();
+            if (envClassName.contains("DirectInput") || envClassName.contains("Input")) {
+                logger.debug("Detected DirectInput-based environment: {}, attempting plugin refresh", envClassName);
+                
+                // Try to get the plugins and reload them
+                try {
+                    Class<?> pluginClass = ControllerEnvironment.class;
+                    java.lang.reflect.Method getDefaultMethod = pluginClass.getDeclaredMethod("getDefaultEnvironment");
+                    
+                    // Force a new scan by clearing static cache if possible
+                    Field defaultEnvField = pluginClass.getDeclaredField("defaultEnvironment");
+                    defaultEnvField.setAccessible(true);
+                    
+                    // Clear it temporarily
+                    defaultEnvField.set(null, null);
+                    
+                    // Get new instance (forces rescan)
+                    Object newEnv = getDefaultMethod.invoke(null);
+                    
+                    // Restore it
+                    defaultEnvField.set(null, newEnv);
+                    
+                    logger.debug("Forced environment recreation");
+                    return true;
+                } catch (NoSuchFieldException | NoSuchMethodException e) {
+                    logger.debug("Could not find field/method for environment recreation: {}", e.getMessage());
+                } catch (SecurityException e) {
+                    logger.debug("Security restriction prevented environment recreation: {}", e.getMessage());
+                } catch (Exception e) {
+                    logger.debug("Could not recreate environment: {}", e.getMessage());
+                }
+            }
+
+            logger.debug("Using fallback detection without forced rescan");
+            return false;
+
+        } catch (Exception e) {
+            logger.warn("Unexpected error during environment rescan attempt: {}", e.getMessage());
+            return false;
         }
     }
     

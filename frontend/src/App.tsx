@@ -45,6 +45,21 @@ export default function App() {
       addTerminalLine(`$ Robot ${data.id} disconnected`);
     });
 
+    const unsubControllerEvent = apiService.on("controller_paired", (data) => {
+      console.log("[WebSocket] Controller event:", data);
+      fetchControllers();
+    });
+
+    const unsubControllerUnpaired = apiService.on("controller_unpaired", (data) => {
+      console.log("[WebSocket] Controller unpaired:", data);
+      fetchControllers();
+    });
+
+    const unsubControllersUpdated = apiService.on("controllers_updated", (data) => {
+      console.log("[WebSocket] Controllers updated:", data);
+      fetchControllers();
+    });
+
     const unsubEmergency = apiService.on("emergency_stop", (data) => {
       console.log("[WebSocket] Emergency stop:", data);
       setEmergencyActive(data.active);
@@ -57,11 +72,15 @@ export default function App() {
     fetchRobots();
     fetchControllers();
     startNetworkPolling();
+    startControllerPolling();
 
     return () => {
       unsubscribe();
       unsubRobotConnected();
       unsubRobotDisconnected();
+      unsubControllerEvent();
+      unsubControllerUnpaired();
+      unsubControllersUpdated();
       unsubEmergency();
     };
   }, []);
@@ -119,6 +138,19 @@ export default function App() {
         console.error("[App] Failed to fetch network stats:", error);
       }
     }, 5000);
+
+    return () => clearInterval(interval);
+  };
+
+  const startControllerPolling = () => {
+    // Poll controllers every 2 seconds to detect newly connected devices
+    const interval = setInterval(async () => {
+      try {
+        await fetchControllers();
+      } catch (error) {
+        console.error("[App] Failed to poll controllers:", error);
+      }
+    }, 2000);
 
     return () => clearInterval(interval);
   };
