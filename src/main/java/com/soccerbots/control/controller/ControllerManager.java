@@ -401,6 +401,10 @@ public class ControllerManager {
                 logger.debug("Cleared cached controllers array");
             } catch (NoSuchFieldException e) {
                 logger.debug("No 'controllers' field found in environment");
+            } catch (SecurityException e) {
+                logger.debug("Security restriction prevented clearing controllers cache: {}", e.getMessage());
+            } catch (IllegalAccessException e) {
+                logger.debug("Access denied to controllers field: {}", e.getMessage());
             }
 
             // Approach 2: Try to invoke a rescan method if it exists
@@ -412,17 +416,20 @@ public class ControllerManager {
                 return true;
             } catch (NoSuchMethodException e) {
                 logger.debug("No 'rescanControllers' method found");
+            } catch (SecurityException e) {
+                logger.debug("Security restriction prevented invoking rescan: {}", e.getMessage());
+            } catch (Exception e) {
+                logger.debug("Failed to invoke rescan method: {}", e.getMessage());
             }
 
             // Approach 3: For Windows DirectInput environment, try to recreate the plugin
-            String envClassName = env.getClass().getName();
-            if (envClassName.contains("DirectAndRawInputEnvironmentPlugin") || 
-                envClassName.contains("DirectInputEnvironmentPlugin")) {
-                logger.debug("Detected DirectInput environment, attempting plugin refresh");
+            String envClassName = env.getClass().getSimpleName();
+            if (envClassName.contains("DirectInput") || envClassName.contains("Input")) {
+                logger.debug("Detected DirectInput-based environment: {}, attempting plugin refresh", envClassName);
                 
                 // Try to get the plugins and reload them
                 try {
-                    Class<?> pluginClass = Class.forName("net.java.games.input.ControllerEnvironment");
+                    Class<?> pluginClass = ControllerEnvironment.class;
                     java.lang.reflect.Method getDefaultMethod = pluginClass.getDeclaredMethod("getDefaultEnvironment");
                     
                     // Force a new scan by clearing static cache if possible
@@ -443,8 +450,12 @@ public class ControllerManager {
                     
                     logger.debug("Forced environment recreation");
                     return true;
-                } catch (Exception ex) {
-                    logger.debug("Could not recreate environment: {}", ex.getMessage());
+                } catch (NoSuchFieldException | NoSuchMethodException e) {
+                    logger.debug("Could not find field/method for environment recreation: {}", e.getMessage());
+                } catch (SecurityException e) {
+                    logger.debug("Security restriction prevented environment recreation: {}", e.getMessage());
+                } catch (Exception e) {
+                    logger.debug("Could not recreate environment: {}", e.getMessage());
                 }
             }
 
@@ -452,7 +463,7 @@ public class ControllerManager {
             return false;
 
         } catch (Exception e) {
-            logger.warn("Failed to force environment rescan: {}", e.getMessage());
+            logger.warn("Unexpected error during environment rescan attempt: {}", e.getMessage());
             return false;
         }
     }
