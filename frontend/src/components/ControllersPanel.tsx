@@ -97,7 +97,7 @@ export function ControllersPanel({
                   controller.enabled === false
                     ? "opacity-50 border-gray-500/30"
                     : "border-white/10"
-                }`}
+                } ${pairingController === controller.id ? "ring-2 ring-cyan-500/50" : ""}`}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
@@ -143,12 +143,12 @@ export function ControllersPanel({
                 )}
 
                 {pairingController === controller.id ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2 mt-2">
                     <Select onValueChange={(value) => handlePair(controller.id, value)}>
-                      <SelectTrigger className="h-7 text-xs">
-                        <SelectValue placeholder="Select robot" />
+                      <SelectTrigger className="h-8 text-xs bg-white/5 border-white/20">
+                        <SelectValue placeholder="Select robot to pair" />
                       </SelectTrigger>
-                      <SelectContent position="popper" side="bottom" align="start" sideOffset={4}>
+                      <SelectContent position="popper" side="bottom" align="start" sideOffset={4} className="z-50">
                         {robots.map((robot) => (
                           <SelectItem key={robot.id} value={robot.id}>
                             {robot.name}
@@ -160,7 +160,7 @@ export function ControllersPanel({
                       size="sm"
                       variant="ghost"
                       onClick={() => setPairingController(null)}
-                      className="w-full h-7 text-xs border border-white/10 hover:bg-white/10"
+                      className="w-full h-8 text-xs border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 text-red-400"
                     >
                       Cancel
                     </Button>

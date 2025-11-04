@@ -58,14 +58,13 @@ class ControllerManager:
             except Exception as e:
                 logger.error(f"Error detecting controllers: {e}")
             
-            time.sleep(3)  # Scan every 3 seconds
+            time.sleep(5)  # Scan every 5 seconds (reduced frequency for stability)
     
     def _detect_controllers(self):
         """Detect connected game controllers"""
         try:
-            # Update pygame's joystick list
-            pygame.joystick.quit()
-            pygame.joystick.init()
+            # Process pygame events to update joystick state without reinitializing
+            pygame.event.pump()
             
             joystick_count = pygame.joystick.get_count()
             logger.debug(f"Found {joystick_count} joystick(s)")
@@ -74,39 +73,64 @@ class ControllerManager:
             
             for i in range(joystick_count):
                 try:
-                    joystick = pygame.joystick.Joystick(i)
-                    joystick.init()
-                    
-                    controller_id = self._generate_controller_id(joystick)
-                    current_controller_ids.add(controller_id)
-                    
+                    # Try to reuse existing joystick or create new one
+                    joystick = None
                     with self._lock:
-                        if controller_id not in self.connected_controllers:
-                            # Determine controller type
-                            controller_type = self._identify_controller_type(joystick)
-                            
-                            game_controller = GameController(
-                                controller_id,
-                                controller_type,
-                                joystick.get_name()
-                            )
-                            
-                            self.connected_controllers[controller_id] = game_controller
-                            self.controller_joysticks[controller_id] = joystick
-                            self.controller_enabled[controller_id] = True  # Enable by default
-                            
-                            logger.info(f"Detected new controller: {joystick.get_name()} ({controller_type})")
+                        # Check if we already have this joystick by index
+                        for cid, js in self.controller_joysticks.items():
+                            if js.get_id() == i:
+                                joystick = js
+                                controller_id = cid
+                                current_controller_ids.add(controller_id)
+                                break
+                    
+                    # If not found, create new joystick
+                    if joystick is None:
+                        joystick = pygame.joystick.Joystick(i)
+                        if not joystick.get_init():
+                            joystick.init()
+                        
+                        controller_id = self._generate_controller_id(joystick)
+                        current_controller_ids.add(controller_id)
+                        
+                        with self._lock:
+                            if controller_id not in self.connected_controllers:
+                                # Determine controller type
+                                controller_type = self._identify_controller_type(joystick)
+                                
+                                game_controller = GameController(
+                                    controller_id,
+                                    controller_type,
+                                    joystick.get_name()
+                                )
+                                
+                                self.connected_controllers[controller_id] = game_controller
+                                self.controller_joysticks[controller_id] = joystick
+                                self.controller_enabled[controller_id] = True  # Enable by default
+                                
+                                logger.info(f"Detected new controller: {joystick.get_name()} ({controller_type})")
                 
                 except Exception as e:
                     logger.error(f"Error initializing joystick {i}: {e}")
             
-            # Remove disconnected controllers
+            # Remove disconnected controllers (only remove if truly gone)
             with self._lock:
                 disconnected = set(self.connected_controllers.keys()) - current_controller_ids
                 for controller_id in disconnected:
+                    # Double-check by trying to find the joystick
+                    joystick = self.controller_joysticks.get(controller_id)
+                    if joystick and joystick.get_init():
+                        # Controller still exists, don't remove
+                        current_controller_ids.add(controller_id)
+                        continue
+                    
                     logger.info(f"Controller disconnected: {controller_id}")
                     del self.connected_controllers[controller_id]
                     if controller_id in self.controller_joysticks:
+                        try:
+                            self.controller_joysticks[controller_id].quit()
+                        except:
+                            pass
                         del self.controller_joysticks[controller_id]
                     if controller_id in self.controller_robot_pairings:
                         del self.controller_robot_pairings[controller_id]
