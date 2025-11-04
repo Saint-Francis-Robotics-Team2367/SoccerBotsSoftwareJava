@@ -91,6 +91,8 @@ npm run install:all
 # Run everything with one command!
 npm run dev
 ```
+If NPM run dev doesn't work and complains about 'concurrently', then run "npm install -g concurrently", and retry.
+
 This automatically:
 - ✅ Starts Python backend (port 8080)
 - ✅ Starts React dev server (port 5173)
