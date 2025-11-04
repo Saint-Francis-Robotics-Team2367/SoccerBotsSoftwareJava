@@ -118,9 +118,12 @@ class ControllerManager:
                 disconnected = set(self.connected_controllers.keys()) - current_controller_ids
                 for controller_id in disconnected:
                     # Double-check by trying to find the joystick
+                    # This prevents removing controllers that are still connected but
+                    # temporarily not detected (e.g., during brief system hiccups)
                     joystick = self.controller_joysticks.get(controller_id)
                     if joystick and joystick.get_init():
-                        # Controller still exists, don't remove
+                        # Controller still exists, don't remove it
+                        # Add it back to current_controller_ids to keep it alive
                         current_controller_ids.add(controller_id)
                         continue
                     
@@ -129,7 +132,7 @@ class ControllerManager:
                     if controller_id in self.controller_joysticks:
                         try:
                             self.controller_joysticks[controller_id].quit()
-                        except:
+                        except Exception:
                             pass
                         del self.controller_joysticks[controller_id]
                     if controller_id in self.controller_robot_pairings:
