@@ -37,13 +37,6 @@ export function ControlPanel({ onEmergencyStop, emergencyActive }: ControlPanelP
     };
   }, [isRunning, timeRemaining]);
 
-  // Sync timeRemaining with matchDuration when matchDuration changes and timer is not running
-  useEffect(() => {
-    if (!isRunning) {
-      setTimeRemaining(matchDuration);
-    }
-  }, [matchDuration, isRunning]);
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -74,7 +67,6 @@ export function ControlPanel({ onEmergencyStop, emergencyActive }: ControlPanelP
 
     const newDuration = Math.max(1, matchDuration + seconds);
     setMatchDuration(newDuration);
-    setTimeRemaining(newDuration); // Update time remaining immediately
     toast.success(`Duration set to ${formatTime(newDuration)}`);
   };
 
