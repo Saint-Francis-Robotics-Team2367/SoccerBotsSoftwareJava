@@ -20,6 +20,8 @@ def simulate_robot(robot_name: str, robot_ip: str = "127.0.0.1"):
     # sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     
     # Create UDP socket for receiving commands
+    # Security note: Binds to all interfaces ('') to simulate ESP32 robot behavior
+    # This is a test utility only - not used in production
     cmd_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     cmd_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     cmd_sock.bind(('', COMMAND_PORT))

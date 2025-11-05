@@ -46,6 +46,8 @@ class NetworkManager:
         try:
             self.discovery_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.discovery_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # Bind to all interfaces to receive broadcast discovery pings from robots
+            # This is required for UDP broadcast reception
             self.discovery_socket.bind(('', self.DISCOVERY_PORT))
             self.discovery_socket.settimeout(0.1)  # 100ms timeout for non-blocking receives
             logger.info(f"Discovery socket initialized on port {self.DISCOVERY_PORT}")
