@@ -17,8 +17,9 @@ class RobotManager:
 
     ROBOT_TIMEOUT_SECONDS = 10.0  # Mark robot as disconnected after 10 seconds of no pings
 
-    def __init__(self, network_manager: NetworkManager):
+    def __init__(self, network_manager: NetworkManager, api_server=None): # Add api_server parameter
         self.network_manager = network_manager
+        self.api_server = api_server # Store api_server instance
         self.connected_robots: Dict[str, Robot] = {}
         self.discovered_robots: Dict[str, Robot] = {}
         self.current_game_state = "standby"  # "standby" or "teleop"
@@ -87,6 +88,20 @@ class RobotManager:
                         robot.set_ip_address(ip_address)
                         robot.update_last_seen_time()
 
+
+
+    def send_stop_command(self, robot_name: str):
+        """Send stop command to specific robot"""
+        robot = self.get_robot(robot_name)
+        if not robot:
+            logger.warn(f"Robot not found: {robot_name}")
+            return
+
+        stop_command = ESP32Command.create_stop_command(robot_name)
+        self._send_esp32_command(robot, stop_command)
+        if self.api_server:
+            self.api_server.broadcast_robot_receiving_command(robot.id, False)
+
     def _timeout_check_loop(self):
         """Check for robots that have timed out and mark them as disconnected"""
         while self._running:
@@ -101,6 +116,9 @@ class RobotManager:
                         time_since_seen = current_time - robot.last_seen_time
                         if time_since_seen > self.ROBOT_TIMEOUT_SECONDS:
                             logger.warn(f"Robot {robot_id} timed out (no ping for {time_since_seen:.1f}s)")
+                            # Broadcast receiving: False before removing
+                            if self.api_server:
+                                self.api_server.broadcast_robot_receiving_command(robot_id, False)
                             # Remove immediately from connected list - don't keep disconnected robots
                             del self.connected_robots[robot_id]
                             disconnected_robots.append(robot_id)
@@ -127,142 +145,37 @@ class RobotManager:
                 logger.error(f"Error in timeout check loop: {e}")
 
             time.sleep(2.0)  # Check every 2 seconds
-    
-    def scan_for_robots(self):
-        """Scan for robots - This method is now passive, just waits for discovery pings"""
-        logger.info("Scanning for robots (passive discovery mode)")
-        # Discovery is automatic via start_discovery()
-    
-    def get_discovered_robots(self) -> List[Robot]:
-        """Get all discovered robots"""
-        with self._lock:
-            return list(self.discovered_robots.values())
-    
-    def get_connected_robots(self) -> List[Robot]:
-        """Get all connected robots"""
-        with self._lock:
-            return list(self.connected_robots.values())
-    
-    def get_robot(self, robot_id: str) -> Optional[Robot]:
-        """Get robot by ID from either connected or discovered lists"""
-        with self._lock:
-            robot = self.connected_robots.get(robot_id)
-            if robot is None:
-                robot = self.discovered_robots.get(robot_id)
-            return robot
-    
-    def connect_discovered_robot(self, robot_id: str) -> Optional[Robot]:
-        """Connect to a discovered robot"""
-        with self._lock:
-            robot = self.discovered_robots.get(robot_id)
-            if robot:
-                robot.set_connected(True)
-                robot.status = "connected"
-                self.connected_robots[robot_id] = robot
-                logger.info(f"Connected to discovered robot: {robot_id} at {robot.ip_address}")
-                return robot
-            
-            logger.warn(f"Cannot connect - robot not found in discovered robots: {robot_id}")
-            return None
-    
-    def add_robot(self, robot_name: str, ip_address: str) -> Robot:
-        """Add an ESP32 robot manually by IP address and name"""
-        with self._lock:
-            robot = Robot(robot_name, robot_name, ip_address, "connected")
-            robot.set_connected(True)
-            self.connected_robots[robot_name] = robot
-            logger.info(f"Added ESP32 robot: {robot_name} at {ip_address}")
-            return robot
-    
-    def remove_robot(self, robot_id: str):
-        """Remove a robot from connected list"""
-        with self._lock:
-            if robot_id in self.connected_robots:
-                del self.connected_robots[robot_id]
-                logger.info(f"Removed robot: {robot_id}")
-    
-    def send_movement_command(self, robot_name: str,
-                             left_stick_x: float, left_stick_y: float,
-                             right_stick_x: float, right_stick_y: float):
-        """Send movement command to robot using normalized values (-1.0 to 1.0)"""
-        robot = self.get_robot(robot_name)
-        if not robot:
-            logger.warn(f"Robot not found: {robot_name}")
-            return
-        
-        command = ESP32Command.from_controller_input(
-            robot_name, left_stick_x, left_stick_y,
-            right_stick_x, right_stick_y
-        )
-        
-        self._send_esp32_command(robot, command)
-    
-    def send_stop_command(self, robot_name: str):
-        """Send stop command to specific robot"""
-        robot = self.get_robot(robot_name)
-        if not robot:
-            logger.warn(f"Robot not found: {robot_name}")
-            return
-        
-        stop_command = ESP32Command.create_stop_command(robot_name)
-        self._send_esp32_command(robot, stop_command)
-    
-    def _send_esp32_command(self, robot: Robot, command: ESP32Command):
-        """Send ESP32 command to robot"""
-        # Block all movement commands during emergency stop
-        if self.emergency_stop_active:
-            command = ESP32Command.create_stop_command(command.robot_name)
-        # Only send movement commands during teleop mode
-        elif self.current_game_state != "teleop":
-            command = ESP32Command.create_stop_command(command.robot_name)
-        
-        self.network_manager.send_robot_command(
-            command.robot_name,
-            robot.ip_address,
-            command.left_x,
-            command.left_y,
-            command.right_x,
-            command.right_y,
-            command.cross,
-            command.circle,
-            command.square,
-            command.triangle
-        )
-        
-        robot.update_last_command_time()
-    
-    def start_teleop(self):
-        """Enable teleop mode - robots can receive movement commands"""
-        self.current_game_state = "teleop"
-        logger.info("Teleop mode started")
-        
-        # Send teleop status to all connected robots
-        with self._lock:
-            for robot in self.connected_robots.values():
-                self.network_manager.send_game_status(robot.name, robot.ip_address, "teleop")
-    
+
     def stop_teleop(self):
         """Disable teleop mode - robots stop moving"""
         self.current_game_state = "standby"
         logger.info("Teleop mode stopped")
-        
+
         # Send standby status to all connected robots
         with self._lock:
             for robot in self.connected_robots.values():
                 self.network_manager.send_game_status(robot.name, robot.ip_address, "standby")
                 self.send_stop_command(robot.id)
-    
+                if self.api_server:
+                    self.api_server.broadcast_robot_receiving_command(robot.id, False)
+
     def emergency_stop_all(self):
         """Activate emergency stop for all robots"""
         self.emergency_stop_active = True
         self.network_manager.broadcast_emergency_stop(activate=True)
         logger.warn("Emergency stop activated for all robots")
-    
+        if self.api_server:
+            for robot_id in self.connected_robots.keys():
+                self.api_server.broadcast_robot_receiving_command(robot_id, False)
+
     def deactivate_emergency_stop(self):
         """Deactivate emergency stop"""
         self.emergency_stop_active = False
         self.network_manager.broadcast_emergency_stop(activate=False)
         logger.info("Emergency stop deactivated")
+        # No need to broadcast receiving: True here, as robots will only start receiving
+        # commands again if a controller is actively sending them.
+
     
     def shutdown(self):
         """Shutdown robot manager"""

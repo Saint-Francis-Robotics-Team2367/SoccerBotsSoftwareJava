@@ -21,6 +21,7 @@ class ApiServer:
         self.robot_manager = robot_manager
         self.controller_manager = controller_manager
         self.network_manager = network_manager
+        self.robot_manager.api_server = self # Pass self to robot_manager
 
         # Match timer state
         self.match_duration_ms = 120000  # Default: 2 minutes
@@ -295,6 +296,10 @@ class ApiServer:
             except ValueError:
                 return jsonify({'error': 'Invalid duration format'}), 400
     
+    def broadcast_robot_receiving_command(self, robot_id: str, receiving: bool):
+        """Broadcast update via WebSocket when a robot is receiving commands"""
+        self.broadcast_update('robot_receiving_command', {'id': robot_id, 'receiving': receiving})
+
     def broadcast_update(self, event_type: str, data: dict):
         """Broadcast update via WebSocket"""
         message = {

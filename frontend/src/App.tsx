@@ -81,6 +81,15 @@ export default function App() {
       setEmergencyActive(data.active);
     });
 
+    const unsubRobotReceiving = apiService.on("robot_receiving_command", (data) => {
+      console.log("[WebSocket] Robot receiving command:", data);
+      setRobots((prevRobots) =>
+        prevRobots.map((robot) =>
+          robot.id === data.id ? { ...robot, receiving: data.receiving } : robot
+        )
+      );
+    });
+
     addTerminalLine("$ WebSocket connection established");
     addTerminalLine("$ System ready");
 
@@ -98,6 +107,7 @@ export default function App() {
       unsubControllerUnpaired();
       unsubControllersUpdated();
       unsubEmergency();
+      unsubRobotReceiving();
     };
   }, []);
 
