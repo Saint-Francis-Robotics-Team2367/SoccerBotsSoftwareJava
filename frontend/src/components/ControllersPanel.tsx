@@ -95,7 +95,7 @@ export function ControllersPanel({
                   controller.enabled === false
                     ? "opacity-50 border-gray-500/30"
                     : "border-white/10"
-                } ${pairingController === controller.id ? "ring-2 ring-cyan-500/50" : ""}`}
+                } ${pairingControllerId === controller.id ? "ring-2 ring-cyan-500/50" : ""}`}
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
