@@ -88,7 +88,98 @@ class RobotManager:
                         robot.set_ip_address(ip_address)
                         robot.update_last_seen_time()
 
-
+    def get_robot(self, robot_id: str) -> Optional[Robot]:
+        """Get robot by ID from either connected or discovered list"""
+        with self._lock:
+            robot = self.connected_robots.get(robot_id)
+            if robot:
+                return robot
+            return self.discovered_robots.get(robot_id)
+    
+    def get_connected_robots(self) -> List[Robot]:
+        """Get list of connected robots"""
+        with self._lock:
+            return list(self.connected_robots.values())
+    
+    def get_discovered_robots(self) -> List[Robot]:
+        """Get list of discovered robots"""
+        with self._lock:
+            return list(self.discovered_robots.values())
+    
+    def connect_discovered_robot(self, robot_id: str) -> Optional[Robot]:
+        """Move a robot from discovered to connected list"""
+        with self._lock:
+            robot = self.discovered_robots.get(robot_id)
+            if robot:
+                # Move from discovered to connected
+                del self.discovered_robots[robot_id]
+                robot.set_connected(True)
+                robot.status = "connected"
+                self.connected_robots[robot_id] = robot
+                logger.info(f"Connected to robot: {robot_id}")
+                
+                # Send teleop status if match is running
+                if self.current_game_state == "teleop":
+                    self.network_manager.send_game_status(robot.name, robot.ip_address, "teleop")
+                
+                return robot
+            return None
+    
+    def remove_robot(self, robot_id: str):
+        """Remove robot from connected list"""
+        with self._lock:
+            if robot_id in self.connected_robots:
+                robot = self.connected_robots[robot_id]
+                # Send stop command before removing
+                self.network_manager.send_robot_command(
+                    robot.name, robot.ip_address, 127, 127, 127, 127
+                )
+                del self.connected_robots[robot_id]
+                logger.info(f"Removed robot: {robot_id}")
+    
+    def scan_for_robots(self):
+        """Manually trigger robot scan (discovery is passive, so this is a no-op)"""
+        logger.info("Robot scan requested - discovery is automatic via broadcast")
+    
+    def start_teleop(self):
+        """Enable teleop mode - robots can move"""
+        self.current_game_state = "teleop"
+        logger.info("Teleop mode started")
+        
+        # Send teleop status to all connected robots
+        with self._lock:
+            for robot in self.connected_robots.values():
+                self.network_manager.send_game_status(robot.name, robot.ip_address, "teleop")
+    
+    def send_movement_command(self, robot_id: str, left_x: float, left_y: float, 
+                             right_x: float, right_y: float):
+        """
+        Send movement command to robot.
+        Input values are normalized -1.0 to 1.0, converted to 0-255 for ESP32.
+        """
+        robot = self.get_robot(robot_id)
+        if not robot:
+            logger.warn(f"Cannot send command - robot not found: {robot_id}")
+            return
+        
+        # Convert from -1.0 to 1.0 range to 0-255 range (127 = center)
+        left_x_int = int((left_x + 1.0) * 127.5)
+        left_y_int = int((left_y + 1.0) * 127.5)
+        right_x_int = int((right_x + 1.0) * 127.5)
+        right_y_int = int((right_y + 1.0) * 127.5)
+        
+        # Send command via network manager
+        self.network_manager.send_robot_command(
+            robot.name, robot.ip_address,
+            left_x_int, left_y_int, right_x_int, right_y_int
+        )
+        
+        # Update last command time
+        robot.update_last_command_time()
+        
+        # Broadcast that robot is receiving commands
+        if self.api_server:
+            self.api_server.broadcast_robot_receiving_command(robot_id, True)
 
     def send_stop_command(self, robot_name: str):
         """Send stop command to specific robot"""
@@ -97,8 +188,10 @@ class RobotManager:
             logger.warn(f"Robot not found: {robot_name}")
             return
 
-        stop_command = ESP32Command.create_stop_command(robot_name)
-        self._send_esp32_command(robot, stop_command)
+        # Send centered command (all axes at 127 = stopped)
+        self.network_manager.send_robot_command(
+            robot.name, robot.ip_address, 127, 127, 127, 127
+        )
         if self.api_server:
             self.api_server.broadcast_robot_receiving_command(robot.id, False)
 

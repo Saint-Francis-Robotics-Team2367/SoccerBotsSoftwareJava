@@ -23,13 +23,21 @@
     "files": [
       "main.js",
       "preload.js",
-      "../frontend/dist/**/*",
-      "../target/robotics-control-system-1.0.0-jar-with-dependencies.jar"
+      {
+        "from": "../frontend/dist",
+        "to": "frontend/dist",
+        "filter": ["**/*"]
+      }
     ],
     "extraResources": [
       {
-        "from": "../target/robotics-control-system-1.0.0-jar-with-dependencies.jar",
-        "to": "backend.jar"
+        "from": "../python_backend",
+        "to": "python_backend",
+        "filter": [
+          "**/*",
+          "!**/__pycache__/**",
+          "!**/*.pyc"
+        ]
       }
     ],
     "win": {
