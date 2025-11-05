@@ -1,14 +1,7 @@
-import { Gamepad2, Link, Unlink, Power, Ban, Circle, RefreshCw } from "lucide-react";
+import { Gamepad2, Link, Unlink, Power, Ban, Circle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "./ui/select";
 import { useState } from "react";
 
 interface Controller {
@@ -45,10 +38,22 @@ export function ControllersPanel({
   onRefresh,
 }: ControllersPanelProps) {
   const [pairingController, setPairingController] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
 
   const handlePair = (controllerId: string, robotId: string) => {
     onPair(controllerId, robotId);
     setPairingController(null);
+    setDropdownOpen(null);
+  };
+
+  const handleStartPairing = (controllerId: string) => {
+    setPairingController(controllerId);
+    setDropdownOpen(controllerId);
+  };
+
+  const handleCancelPairing = () => {
+    setPairingController(null);
+    setDropdownOpen(null);
   };
 
   const getControllerIcon = (type?: string) => {
@@ -156,7 +161,7 @@ export function ControllersPanel({
                   ) : (
                     <Button
                       size="sm"
-                      onClick={() => setPairingController(controller.id)}
+                      onClick={() => handleStartPairing(controller.id)}
                       disabled={!controller.connected || controller.enabled === false}
                       className="flex-1 h-7 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/50 disabled:opacity-50"
                     >
@@ -186,23 +191,32 @@ export function ControllersPanel({
                 </div>
 
                 {pairingController === controller.id && (
-                  <div className="space-y-2 mt-2">
-                    <Select onValueChange={(value) => handlePair(controller.id, value)}>
-                      <SelectTrigger className="h-8 text-xs bg-white/5 border-white/20">
-                        <SelectValue placeholder="Select robot to pair" />
-                      </SelectTrigger>
-                      <SelectContent position="popper" side="bottom" align="start" sideOffset={4} className="z-50">
-                        {robots.map((robot) => (
-                          <SelectItem key={robot.id} value={robot.id}>
-                            {robot.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="mt-3 space-y-2">
+                    <div className="text-xs text-cyan-400 font-semibold mb-2">Select Robot to Pair:</div>
+                    <div className="max-h-32 overflow-y-auto border border-white/20 rounded-md bg-black/40">
+                      {robots.length === 0 ? (
+                        <div className="p-3 text-center text-xs text-gray-400">
+                          No robots available
+                        </div>
+                      ) : (
+                        robots.map((robot) => (
+                          <button
+                            key={robot.id}
+                            onClick={() => handlePair(controller.id, robot.id)}
+                            className="w-full text-left px-3 py-2 text-xs text-white hover:bg-cyan-500/20 border-b border-white/10 last:border-b-0 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span>{robot.name}</span>
+                              <span className="text-gray-400 text-xs">{robot.id}</span>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => setPairingController(null)}
+                      onClick={handleCancelPairing}
                       className="w-full h-8 text-xs border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 text-red-400"
                     >
                       Cancel
