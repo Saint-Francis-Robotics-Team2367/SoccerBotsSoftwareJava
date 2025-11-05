@@ -21,7 +21,7 @@ def print_section(title):
 def test_health():
     """Test API health check"""
     print_section("Testing API Health")
-    response = requests.get(f"{BASE_URL}/api/health")
+    response = requests.get(f"{BASE_URL}/api/health", timeout=10)
     assert response.status_code == 200, f"Health check failed: {response.status_code}"
     data = response.json()
     print(f"✓ API is online (timestamp: {data['timestamp']})")
@@ -44,7 +44,7 @@ def test_robot_discovery():
     time.sleep(3)
     
     # Check if robot was discovered
-    response = requests.get(f"{BASE_URL}/api/robots")
+    response = requests.get(f"{BASE_URL}/api/robots", timeout=10)
     assert response.status_code == 200
     robots = response.json()
     
@@ -61,7 +61,7 @@ def test_robot_connection():
     print_section("Testing Robot Connection")
     
     robot_id = "TestBot1"
-    response = requests.post(f"{BASE_URL}/api/robots/{robot_id}/connect")
+    response = requests.post(f"{BASE_URL}/api/robots/{robot_id}/connect", timeout=10)
     assert response.status_code == 200
     data = response.json()
     
@@ -74,7 +74,7 @@ def test_robot_connection():
     
     # Verify connection persists
     time.sleep(1)
-    response = requests.get(f"{BASE_URL}/api/robots")
+    response = requests.get(f"{BASE_URL}/api/robots", timeout=10)
     robots = response.json()
     robot = next(r for r in robots if r['id'] == robot_id)
     assert robot['connected'] == True, "Robot should remain connected"
@@ -86,7 +86,7 @@ def test_controllers():
     """Test controller listing"""
     print_section("Testing Controller Detection")
     
-    response = requests.get(f"{BASE_URL}/api/controllers")
+    response = requests.get(f"{BASE_URL}/api/controllers", timeout=10)
     assert response.status_code == 200
     controllers = response.json()
     
@@ -103,7 +103,7 @@ def test_pairing_state():
     print_section("Testing Pairing State Management")
     
     # Get initial state
-    response = requests.get(f"{BASE_URL}/api/robots")
+    response = requests.get(f"{BASE_URL}/api/robots", timeout=10)
     robots = response.json()
     robot = robots[0]
     
@@ -123,7 +123,7 @@ def test_emergency_stop():
     print_section("Testing Emergency Stop")
     
     # Activate emergency stop
-    response = requests.post(f"{BASE_URL}/api/emergency-stop")
+    response = requests.post(f"{BASE_URL}/api/emergency-stop", timeout=10)
     assert response.status_code == 200
     data = response.json()
     assert data['success'] == True
@@ -132,7 +132,7 @@ def test_emergency_stop():
     time.sleep(1)
     
     # Deactivate emergency stop
-    response = requests.post(f"{BASE_URL}/api/emergency-stop/deactivate")
+    response = requests.post(f"{BASE_URL}/api/emergency-stop/deactivate", timeout=10)
     assert response.status_code == 200
     data = response.json()
     assert data['success'] == True
@@ -145,7 +145,7 @@ def test_robot_disconnect():
     print_section("Testing Robot Disconnection")
     
     robot_id = "TestBot1"
-    response = requests.post(f"{BASE_URL}/api/robots/{robot_id}/disconnect")
+    response = requests.post(f"{BASE_URL}/api/robots/{robot_id}/disconnect", timeout=10)
     assert response.status_code == 200
     data = response.json()
     assert data['success'] == True
@@ -154,7 +154,7 @@ def test_robot_disconnect():
     
     # Verify robot is removed from connected list
     time.sleep(1)
-    response = requests.get(f"{BASE_URL}/api/robots")
+    response = requests.get(f"{BASE_URL}/api/robots", timeout=10)
     robots = response.json()
     
     # Robot may still be in discovered list if it's still sending pings

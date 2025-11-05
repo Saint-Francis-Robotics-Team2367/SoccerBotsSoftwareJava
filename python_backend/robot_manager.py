@@ -159,14 +159,15 @@ class RobotManager:
         """
         robot = self.get_robot(robot_id)
         if not robot:
-            logger.warn(f"Cannot send command - robot not found: {robot_id}")
+            logger.warning(f"Cannot send command - robot not found: {robot_id}")
             return
         
         # Convert from -1.0 to 1.0 range to 0-255 range (127 = center)
-        left_x_int = int((left_x + 1.0) * 127.5)
-        left_y_int = int((left_y + 1.0) * 127.5)
-        right_x_int = int((right_x + 1.0) * 127.5)
-        right_y_int = int((right_y + 1.0) * 127.5)
+        # Add bounds checking for floating point precision issues
+        left_x_int = max(0, min(255, int((left_x + 1.0) * 127.5)))
+        left_y_int = max(0, min(255, int((left_y + 1.0) * 127.5)))
+        right_x_int = max(0, min(255, int((right_x + 1.0) * 127.5)))
+        right_y_int = max(0, min(255, int((right_y + 1.0) * 127.5)))
         
         # Send command via network manager
         self.network_manager.send_robot_command(
@@ -256,7 +257,7 @@ class RobotManager:
         """Activate emergency stop for all robots"""
         self.emergency_stop_active = True
         self.network_manager.broadcast_emergency_stop(activate=True)
-        logger.warn("Emergency stop activated for all robots")
+        logger.warning("Emergency stop activated for all robots")
         if self.api_server:
             for robot_id in self.connected_robots.keys():
                 self.api_server.broadcast_robot_receiving_command(robot_id, False)
