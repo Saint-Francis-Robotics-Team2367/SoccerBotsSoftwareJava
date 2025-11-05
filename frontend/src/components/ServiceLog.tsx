@@ -2,6 +2,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Trash2 } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 interface LogEntry {
   id: string;
@@ -16,6 +17,16 @@ interface ServiceLogProps {
 }
 
 export function ServiceLog({ logs, onClear }: ServiceLogProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Scroll to bottom when logs change
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [logs]);
+
   const getLevelColor = (level: string) => {
     switch (level) {
       case "error":
@@ -43,7 +54,7 @@ export function ServiceLog({ logs, onClear }: ServiceLogProps) {
         </Button>
       </div>
       <ScrollArea className="flex-1 min-h-0">
-        <div className="space-y-2 pr-4">
+        <div ref={scrollContainerRef} className="space-y-2 pr-4">
           {logs.map((log) => (
             <div
               key={log.id}
@@ -58,6 +69,7 @@ export function ServiceLog({ logs, onClear }: ServiceLogProps) {
               <p className="text-sm text-gray-200">{log.message}</p>
             </div>
           ))}
+          <div ref={bottomRef} />
         </div>
       </ScrollArea>
     </div>

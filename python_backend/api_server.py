@@ -21,20 +21,28 @@ class ApiServer:
         self.robot_manager = robot_manager
         self.controller_manager = controller_manager
         self.network_manager = network_manager
-        
+
         # Match timer state
         self.match_duration_ms = 120000  # Default: 2 minutes
         self.match_start_time = 0
         self.match_running = False
         self.last_controller_count = 0
-        
+
         # Flask app setup
         self.app = Flask(__name__)
         CORS(self.app)
         self.socketio = SocketIO(self.app, cors_allowed_origins="*")
-        
+
+        # Register disconnect callback
+        self.robot_manager.register_disconnect_callback(self._on_robot_disconnected)
+
         self._setup_routes()
         self._start_background_tasks()
+
+    def _on_robot_disconnected(self, robot_id: str):
+        """Called when a robot times out and disconnects"""
+        logger.info(f"Robot disconnected via timeout: {robot_id}")
+        self.broadcast_update('robot_disconnected', {'id': robot_id})
     
     def _setup_routes(self):
         """Setup REST API routes"""

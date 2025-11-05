@@ -92,8 +92,17 @@ export default function App() {
   const fetchRobots = async () => {
     try {
       const robotsData = await apiService.getRobots();
-      setRobots(robotsData);
-      console.log("[App] Fetched robots:", robotsData);
+      // Filter out robots that have been disconnected for too long
+      const filteredRobots = robotsData.filter((robot: Robot) => {
+        // Keep connected robots and recently discovered robots
+        if (robot.status === "connected" || robot.status === "discovered" || robot.status === "connecting") {
+          return true;
+        }
+        // Remove disconnected robots
+        return false;
+      });
+      setRobots(filteredRobots);
+      console.log("[App] Fetched robots:", filteredRobots);
     } catch (error) {
       console.error("[App] Failed to fetch robots:", error);
       addTerminalLine("$ Error: Failed to fetch robot list");

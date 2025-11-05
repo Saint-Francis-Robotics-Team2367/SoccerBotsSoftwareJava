@@ -275,6 +275,12 @@ class ControllerManager:
         with self._lock:
             if controller_id in self.connected_controllers:
                 self.controller_robot_pairings[controller_id] = robot_id
+
+                # Update robot's pairedControllerId
+                robot = self.robot_manager.get_robot(robot_id)
+                if robot:
+                    robot.set_paired_controller(controller_id)
+
                 logger.info(f"Paired controller {controller_id} with robot {robot_id}")
             else:
                 logger.warn(f"Cannot pair - controller not found: {controller_id}")
@@ -283,6 +289,13 @@ class ControllerManager:
         """Unpair controller from robot"""
         with self._lock:
             if controller_id in self.controller_robot_pairings:
+                robot_id = self.controller_robot_pairings[controller_id]
+
+                # Clear robot's pairedControllerId
+                robot = self.robot_manager.get_robot(robot_id)
+                if robot:
+                    robot.set_paired_controller(None)
+
                 del self.controller_robot_pairings[controller_id]
                 logger.info(f"Unpaired controller {controller_id}")
     

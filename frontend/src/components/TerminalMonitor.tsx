@@ -6,11 +6,12 @@ interface TerminalMonitorProps {
 }
 
 export function TerminalMonitor({ lines }: TerminalMonitorProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    // Scroll to bottom when lines change
+    if (bottomRef.current) {
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [lines]);
 
@@ -19,13 +20,14 @@ export function TerminalMonitor({ lines }: TerminalMonitorProps) {
       <h2 className="text-cyan-400 mb-4 shrink-0">Terminal Monitor</h2>
       <div className="flex-1 backdrop-blur-sm bg-black/40 border border-white/10 rounded-md p-4 font-mono text-sm overflow-hidden min-h-0">
         <ScrollArea className="h-full terminal-scroll">
-          <div ref={scrollRef} className="space-y-1">
+          <div className="space-y-1">
             {lines.map((line, index) => (
               <div key={index} className="flex gap-3">
                 <span className="text-cyan-500/50 select-none">{index + 1}</span>
                 <span className="text-green-400">{line}</span>
               </div>
             ))}
+            <div ref={bottomRef} />
           </div>
         </ScrollArea>
       </div>

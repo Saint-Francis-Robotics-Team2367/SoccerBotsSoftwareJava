@@ -142,7 +142,50 @@ export function ControllersPanel({
                   </div>
                 )}
 
-                {pairingController === controller.id ? (
+                <div className="flex gap-2">
+                  {controller.pairedRobotId ? (
+                    <Button
+                      size="sm"
+                      onClick={() => onUnpair(controller.id)}
+                      disabled={!controller.connected || controller.enabled === false}
+                      className="flex-1 h-7 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/50 disabled:opacity-50"
+                    >
+                      <Unlink className="h-3 w-3 mr-1" />
+                      Unpair
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => setPairingController(controller.id)}
+                      disabled={!controller.connected || controller.enabled === false}
+                      className="flex-1 h-7 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/50 disabled:opacity-50"
+                    >
+                      <Link className="h-3 w-3 mr-1" />
+                      Pair
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      controller.enabled === false
+                        ? onEnable(controller.id)
+                        : onDisable(controller.id)
+                    }
+                    className={`h-7 w-7 p-0 ${
+                      controller.enabled === false
+                        ? "bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/50"
+                        : "bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/50"
+                    }`}
+                  >
+                    {controller.enabled === false ? (
+                      <Power className="h-4 w-4" />
+                    ) : (
+                      <Ban className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+
+                {pairingController === controller.id && (
                   <div className="space-y-2 mt-2">
                     <Select onValueChange={(value) => handlePair(controller.id, value)}>
                       <SelectTrigger className="h-8 text-xs bg-white/5 border-white/20">
@@ -163,49 +206,6 @@ export function ControllersPanel({
                       className="w-full h-8 text-xs border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 text-red-400"
                     >
                       Cancel
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    {controller.pairedRobotId ? (
-                      <Button
-                        size="sm"
-                        onClick={() => onUnpair(controller.id)}
-                        disabled={!controller.connected || controller.enabled === false}
-                        className="flex-1 h-7 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/50 disabled:opacity-50"
-                      >
-                        <Unlink className="h-3 w-3 mr-1" />
-                        Unpair
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        onClick={() => setPairingController(controller.id)}
-                        disabled={!controller.connected || controller.enabled === false}
-                        className="flex-1 h-7 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/50 disabled:opacity-50"
-                      >
-                        <Link className="h-3 w-3 mr-1" />
-                        Pair
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        controller.enabled === false
-                          ? onEnable(controller.id)
-                          : onDisable(controller.id)
-                      }
-                      className={`h-7 w-7 p-0 ${
-                        controller.enabled === false
-                          ? "bg-green-500/20 hover:bg-green-500/30 text-green-400 border border-green-500/50"
-                          : "bg-orange-500/20 hover:bg-orange-500/30 text-orange-400 border border-orange-500/50"
-                      }`}
-                    >
-                      {controller.enabled === false ? (
-                        <Power className="h-4 w-4" />
-                      ) : (
-                        <Ban className="h-4 w-4" />
-                      )}
                     </Button>
                   </div>
                 )}
