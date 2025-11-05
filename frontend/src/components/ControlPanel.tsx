@@ -10,54 +10,39 @@ interface ControlPanelProps {
 }
 
 export function ControlPanel({ onEmergencyStop, emergencyActive }: ControlPanelProps) {
-  const [timeRemaining, setTimeRemaining] = useState(120); // Default 2 minutes
   const [matchDuration, setMatchDuration] = useState(120); // Match duration in seconds
+  const [timeRemaining, setTimeRemaining] = useState(matchDuration);
   const [isRunning, setIsRunning] = useState(false);
 
+  // Local timer countdown logic
   useEffect(() => {
-    // Subscribe to timer updates from backend
-    const unsubTimerUpdate = apiService.on("timer_update", (data) => {
-      setTimeRemaining(data.timeRemainingSeconds);
-      setIsRunning(data.running);
-    });
+    let timer: NodeJS.Timeout | undefined;
 
-    const unsubMatchStart = apiService.on("match_start", () => {
-      setIsRunning(true);
-      toast.success("Match started!");
-    });
-
-    const unsubMatchStop = apiService.on("match_stop", () => {
-      setIsRunning(false);
-      toast.info("Match stopped");
-    });
-
-    const unsubMatchEnd = apiService.on("match_end", () => {
+    if (isRunning && timeRemaining > 0) {
+      timer = setInterval(() => {
+        setTimeRemaining((prevTime) => prevTime - 1);
+      }, 1000);
+    } else if (timeRemaining === 0 && isRunning) {
       setIsRunning(false);
       toast.error("⏱️ TIME EXPIRED! Emergency stop activated. Press E-STOP button to release.", {
         duration: 10000, // Show for 10 seconds
       });
-    });
-
-    const unsubMatchReset = apiService.on("match_reset", () => {
-      setIsRunning(false);
-      toast.info("Match reset");
-    });
-
-    // Fetch initial timer state
-    apiService.getMatchTimer().then(timer => {
-      setTimeRemaining(timer.timeRemainingSeconds);
-      setMatchDuration(timer.durationMs / 1000);
-      setIsRunning(timer.running);
-    });
+      apiService.activateEmergencyStop(); // Activate emergency stop when timer runs out
+    }
 
     return () => {
-      unsubTimerUpdate();
-      unsubMatchStart();
-      unsubMatchStop();
-      unsubMatchEnd();
-      unsubMatchReset();
+      if (timer) {
+        clearInterval(timer);
+      }
     };
-  }, []);
+  }, [isRunning, timeRemaining]);
+
+  // Sync timeRemaining with matchDuration when matchDuration changes and timer is not running
+  useEffect(() => {
+    if (!isRunning) {
+      setTimeRemaining(matchDuration);
+    }
+  }, [matchDuration, isRunning]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -65,44 +50,32 @@ export function ControlPanel({ onEmergencyStop, emergencyActive }: ControlPanelP
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleStartStop = async () => {
-    try {
-      if (isRunning) {
-        await apiService.stopMatch();
-      } else {
-        await apiService.startMatch();
-      }
-    } catch (error) {
-      console.error("Failed to toggle match:", error);
-      toast.error("Failed to toggle match");
+  const handleStartStop = () => {
+    if (isRunning) {
+      setIsRunning(false);
+      toast.info("Match stopped");
+    } else {
+      setIsRunning(true);
+      toast.success("Match started!");
     }
   };
 
-  const handleReset = async () => {
-    try {
-      await apiService.resetMatch();
-    } catch (error) {
-      console.error("Failed to reset match:", error);
-      toast.error("Failed to reset match");
-    }
+  const handleReset = () => {
+    setIsRunning(false);
+    setTimeRemaining(matchDuration);
+    toast.info("Match reset");
   };
 
-  const adjustDuration = async (seconds: number) => {
+  const adjustDuration = (seconds: number) => {
     if (isRunning) {
       toast.warning("Cannot adjust duration while match is running");
       return;
     }
 
     const newDuration = Math.max(1, matchDuration + seconds);
-    try {
-      await apiService.setMatchDuration(newDuration);
-      setMatchDuration(newDuration);
-      setTimeRemaining(newDuration);
-      toast.success(`Duration set to ${formatTime(newDuration)}`);
-    } catch (error) {
-      console.error("Failed to set duration:", error);
-      toast.error("Failed to set duration");
-    }
+    setMatchDuration(newDuration);
+    setTimeRemaining(newDuration); // Update time remaining immediately
+    toast.success(`Duration set to ${formatTime(newDuration)}`);
   };
 
   return (
