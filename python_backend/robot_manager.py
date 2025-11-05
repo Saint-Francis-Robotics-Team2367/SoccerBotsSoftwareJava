@@ -209,8 +209,11 @@ class RobotManager:
     
     def _send_esp32_command(self, robot: Robot, command: ESP32Command):
         """Send ESP32 command to robot"""
+        # Block all movement commands during emergency stop
+        if self.emergency_stop_active:
+            command = ESP32Command.create_stop_command(command.robot_name)
         # Only send movement commands during teleop mode
-        if self.current_game_state != "teleop":
+        elif self.current_game_state != "teleop":
             command = ESP32Command.create_stop_command(command.robot_name)
         
         self.network_manager.send_robot_command(

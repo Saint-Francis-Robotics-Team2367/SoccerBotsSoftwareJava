@@ -315,12 +315,15 @@ class ApiServer:
                     now = int(time.time() * 1000)
                     time_remaining_ms = max(0, self.match_duration_ms - (now - self.match_start_time))
                     
-                    # Auto-stop when time expires
+                    # Auto-stop when time expires - activate emergency stop
                     if time_remaining_ms == 0 and self.match_running:
                         self.match_running = False
                         self.robot_manager.stop_teleop()
+                        # Activate emergency stop when timer expires
+                        self.controller_manager.activate_emergency_stop()
                         self.broadcast_update('match_end', {'timestamp': now})
-                        logger.info("Match ended - time expired")
+                        self.broadcast_update('emergency_stop', {'active': True})
+                        logger.warn("Match ended - time expired - EMERGENCY STOP ACTIVATED")
                     
                     self.broadcast_update('timer_update', {
                         'timeRemainingMs': time_remaining_ms,

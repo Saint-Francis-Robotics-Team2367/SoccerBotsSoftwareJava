@@ -33,7 +33,9 @@ export function ControlPanel({ onEmergencyStop, emergencyActive }: ControlPanelP
 
     const unsubMatchEnd = apiService.on("match_end", () => {
       setIsRunning(false);
-      toast.warning("Match ended - time expired!");
+      toast.error("⏱️ TIME EXPIRED! Emergency stop activated. Press E-STOP button to release.", {
+        duration: 10000, // Show for 10 seconds
+      });
     });
 
     const unsubMatchReset = apiService.on("match_reset", () => {
