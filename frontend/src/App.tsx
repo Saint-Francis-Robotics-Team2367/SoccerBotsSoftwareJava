@@ -23,6 +23,9 @@ export default function App() {
   ]);
   const [emergencyActive, setEmergencyActive] = useState(false);
 
+  // Store pairing UI state in parent to survive child re-renders
+  const [pairingControllerId, setPairingControllerId] = useState<string | null>(null);
+
   // Initialize API connection
   useEffect(() => {
     console.log("[App] Initializing API connection...");
@@ -92,17 +95,35 @@ export default function App() {
   const fetchRobots = async () => {
     try {
       const robotsData = await apiService.getRobots();
-      // Filter out robots that have been disconnected for too long
+      // Strict filtering - only show robots that are actually online
+      const currentTime = Date.now() / 1000; // Current time in seconds
       const filteredRobots = robotsData.filter((robot: Robot) => {
-        // Keep connected robots and recently discovered robots
-        if (robot.status === "connected" || robot.status === "discovered" || robot.status === "connecting") {
-          return true;
+        // Only keep connected or discovered robots
+        if (robot.status !== "connected" && robot.status !== "discovered") {
+          return false;
         }
-        // Remove disconnected robots
-        return false;
+
+        // Additional check: if robot has lastSeenTime, verify it's recent (within 15 seconds)
+        if (robot.lastSeenTime) {
+          const timeSinceLastSeen = currentTime - robot.lastSeenTime;
+          if (timeSinceLastSeen > 15) {
+            console.log(`[App] Filtering out stale robot ${robot.name} (last seen ${timeSinceLastSeen.toFixed(1)}s ago)`);
+            return false;
+          }
+        }
+
+        return true;
       });
-      setRobots(filteredRobots);
-      console.log("[App] Fetched robots:", filteredRobots);
+
+      // Only update if there's an actual change - prevents unnecessary re-renders
+      setRobots((prevRobots) => {
+        if (JSON.stringify(prevRobots) === JSON.stringify(filteredRobots)) {
+          console.log("[App] Robots unchanged, skipping update");
+          return prevRobots;
+        }
+        console.log("[App] Fetched robots with changes:", filteredRobots);
+        return filteredRobots;
+      });
     } catch (error) {
       console.error("[App] Failed to fetch robots:", error);
       addTerminalLine("$ Error: Failed to fetch robot list");
@@ -112,8 +133,17 @@ export default function App() {
   const fetchControllers = async () => {
     try {
       const controllersData = await apiService.getControllers();
-      setControllers(controllersData);
-      console.log("[App] Fetched controllers:", controllersData);
+
+      // Only update if there's an actual change - prevents unnecessary re-renders
+      setControllers((prevControllers) => {
+        // Check if data actually changed
+        if (JSON.stringify(prevControllers) === JSON.stringify(controllersData)) {
+          console.log("[App] Controllers unchanged, skipping update");
+          return prevControllers; // Return previous state to prevent re-render
+        }
+        console.log("[App] Fetched controllers with changes:", controllersData);
+        return controllersData;
+      });
     } catch (error) {
       console.error("[App] Failed to fetch controllers:", error);
       addTerminalLine("$ Error: Failed to fetch controller list");
@@ -152,14 +182,15 @@ export default function App() {
   };
 
   const startControllerPolling = () => {
-    // Poll controllers every 2 seconds to detect newly connected devices
+    // Poll controllers every 10 seconds (reduced from 2s to prevent UI disruption)
+    // WebSocket events handle real-time updates, this is just a fallback
     const interval = setInterval(async () => {
       try {
         await fetchControllers();
       } catch (error) {
         console.error("[App] Failed to poll controllers:", error);
       }
-    }, 2000);
+    }, 10000); // Increased to 10 seconds to reduce interference
 
     return () => clearInterval(interval);
   };
@@ -290,12 +321,21 @@ export default function App() {
       await apiService.pairController(controllerId, robotId);
       toast.success("Controller paired successfully");
       addTerminalLine(`$ Paired controller to robot`);
+      setPairingControllerId(null); // Close pairing UI after successful pair
       await fetchControllers();
       await fetchRobots();
     } catch (error) {
       console.error("[App] Failed to pair controller:", error);
       toast.error("Failed to pair controller");
     }
+  };
+
+  const handleStartPairing = (controllerId: string) => {
+    setPairingControllerId(controllerId);
+  };
+
+  const handleCancelPairing = () => {
+    setPairingControllerId(null);
   };
 
   const handleUnpairController = async (controllerId: string) => {
@@ -401,6 +441,9 @@ export default function App() {
               onEnable={handleEnableController}
               onDisable={handleDisableController}
               onRefresh={handleRefreshControllers}
+              pairingControllerId={pairingControllerId}
+              onStartPairing={handleStartPairing}
+              onCancelPairing={handleCancelPairing}
             />
           </div>
         </div>

@@ -12,6 +12,7 @@ export interface Robot {
   disabled?: boolean;
   pairedControllerId?: string;
   lastCommandTime?: number;
+  lastSeenTime?: number; // Timestamp when robot was last seen (for timeout detection)
   receiving?: boolean; // Real-time activity indicator
 }
 

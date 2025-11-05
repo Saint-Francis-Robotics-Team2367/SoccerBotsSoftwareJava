@@ -93,6 +93,7 @@ class RobotManager:
             try:
                 current_time = time.time()
                 disconnected_robots = []
+                robots_to_remove = []
 
                 with self._lock:
                     # Check connected robots for timeout
@@ -100,20 +101,19 @@ class RobotManager:
                         time_since_seen = current_time - robot.last_seen_time
                         if time_since_seen > self.ROBOT_TIMEOUT_SECONDS:
                             logger.warn(f"Robot {robot_id} timed out (no ping for {time_since_seen:.1f}s)")
-                            robot.set_connected(False)
-                            robot.status = "disconnected"
-                            disconnected_robots.append(robot_id)
-                            # Move back to discovered list but keep as disconnected
-                            self.discovered_robots[robot_id] = robot
+                            # Remove immediately from connected list - don't keep disconnected robots
                             del self.connected_robots[robot_id]
+                            disconnected_robots.append(robot_id)
+                            robots_to_remove.append(robot_id)
 
-                    # Remove discovered robots that haven't been seen in a while (2x timeout)
+                    # Also remove from discovered list - robots should completely disappear after timeout
                     for robot_id, robot in list(self.discovered_robots.items()):
                         time_since_seen = current_time - robot.last_seen_time
-                        if time_since_seen > (self.ROBOT_TIMEOUT_SECONDS * 2):
-                            if robot.status == "disconnected":
-                                logger.info(f"Removing disconnected robot {robot_id} from discovered list")
-                                del self.discovered_robots[robot_id]
+                        if time_since_seen > self.ROBOT_TIMEOUT_SECONDS:
+                            logger.info(f"Removing stale robot {robot_id} from discovered list (offline for {time_since_seen:.1f}s)")
+                            del self.discovered_robots[robot_id]
+                            if robot_id not in robots_to_remove:
+                                robots_to_remove.append(robot_id)
 
                 # Call disconnect callbacks outside of lock to avoid deadlock
                 for robot_id in disconnected_robots:

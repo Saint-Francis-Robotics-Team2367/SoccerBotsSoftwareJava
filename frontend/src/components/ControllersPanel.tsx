@@ -1,8 +1,7 @@
-import { Gamepad2, Link, Unlink, Power, Ban, Circle, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { Gamepad2, Link, Unlink, Power, Ban, Circle, RefreshCw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
-import { useState } from "react";
 
 interface Controller {
   id: string;
@@ -26,6 +25,9 @@ interface ControllersPanelProps {
   onEnable: (controllerId: string) => void;
   onDisable: (controllerId: string) => void;
   onRefresh: () => void;
+  pairingControllerId: string | null;
+  onStartPairing: (controllerId: string) => void;
+  onCancelPairing: () => void;
 }
 
 export function ControllersPanel({
@@ -36,24 +38,15 @@ export function ControllersPanel({
   onEnable,
   onDisable,
   onRefresh,
+  pairingControllerId,
+  onStartPairing,
+  onCancelPairing,
 }: ControllersPanelProps) {
-  const [pairingController, setPairingController] = useState<string | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
+  // State is now managed by parent (App.tsx) - this component is now stateless
+  // This prevents any state loss on re-renders caused by polling
 
   const handlePair = (controllerId: string, robotId: string) => {
     onPair(controllerId, robotId);
-    setPairingController(null);
-    setDropdownOpen(null);
-  };
-
-  const handleStartPairing = (controllerId: string) => {
-    setPairingController(controllerId);
-    setDropdownOpen(controllerId);
-  };
-
-  const handleCancelPairing = () => {
-    setPairingController(null);
-    setDropdownOpen(null);
   };
 
   const getControllerIcon = (type?: string) => {
@@ -161,7 +154,7 @@ export function ControllersPanel({
                   ) : (
                     <Button
                       size="sm"
-                      onClick={() => handleStartPairing(controller.id)}
+                      onClick={() => onStartPairing(controller.id)}
                       disabled={!controller.connected || controller.enabled === false}
                       className="flex-1 h-7 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/50 disabled:opacity-50"
                     >
@@ -190,7 +183,7 @@ export function ControllersPanel({
                   </Button>
                 </div>
 
-                {pairingController === controller.id && (
+                {pairingControllerId === controller.id && (
                   <div className="mt-3 space-y-2">
                     <div className="text-xs text-cyan-400 font-semibold mb-2">Select Robot to Pair:</div>
                     <div className="max-h-32 overflow-y-auto border border-white/20 rounded-md bg-black/40">
@@ -216,7 +209,7 @@ export function ControllersPanel({
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={handleCancelPairing}
+                      onClick={onCancelPairing}
                       className="w-full h-8 text-xs border border-red-500/50 bg-red-500/10 hover:bg-red-500/20 text-red-400"
                     >
                       Cancel
