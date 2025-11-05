@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ConnectionPanel } from "./components/ConnectionPanel";
 import { ControllersPanel } from "./components/ControllersPanel";
 import { NetworkAnalysis } from "./components/NetworkAnalysis";
@@ -25,6 +25,19 @@ export default function App() {
 
   // Store pairing UI state in parent to survive child re-renders
   const [pairingControllerId, setPairingControllerId] = useState<string | null>(null);
+
+  // Use ref to track pairing state in interval callbacks (avoids closure issues)
+  const pairingControllerIdRef = useRef<string | null>(null);
+
+  // Debug: Track when pairing state changes
+  useEffect(() => {
+    console.log("[App] ===== PAIRING STATE CHANGED =====");
+    console.log("[App] pairingControllerId:", pairingControllerId);
+    console.trace("[App] Stack trace of state change");
+
+    // Update ref whenever state changes
+    pairingControllerIdRef.current = pairingControllerId;
+  }, [pairingControllerId]);
 
   // Initialize API connection
   useEffect(() => {
@@ -136,12 +149,18 @@ export default function App() {
 
       // Only update if there's an actual change - prevents unnecessary re-renders
       setControllers((prevControllers) => {
-        // Check if data actually changed
-        if (JSON.stringify(prevControllers) === JSON.stringify(controllersData)) {
-          console.log("[App] Controllers unchanged, skipping update");
+        // Deep comparison of controller data
+        const prevJson = JSON.stringify(prevControllers);
+        const newJson = JSON.stringify(controllersData);
+
+        if (prevJson === newJson) {
+          console.log("[App] Controllers unchanged, skipping update (prevents re-render)");
           return prevControllers; // Return previous state to prevent re-render
         }
-        console.log("[App] Fetched controllers with changes:", controllersData);
+
+        console.log("[App] Controllers changed, updating state");
+        console.log("[App] Previous:", prevControllers);
+        console.log("[App] New:", controllersData);
         return controllersData;
       });
     } catch (error) {
@@ -186,6 +205,12 @@ export default function App() {
     // WebSocket events handle real-time updates, this is just a fallback
     const interval = setInterval(async () => {
       try {
+        // DO NOT poll if pairing UI is open - prevents state disruption
+        // Use ref to avoid closure issues with setInterval
+        if (pairingControllerIdRef.current !== null) {
+          console.log("[App] Skipping controller poll - pairing UI is open for:", pairingControllerIdRef.current);
+          return;
+        }
         await fetchControllers();
       } catch (error) {
         console.error("[App] Failed to poll controllers:", error);
@@ -331,10 +356,12 @@ export default function App() {
   };
 
   const handleStartPairing = (controllerId: string) => {
+    console.log("[App] START PAIRING - Opening pairing UI for:", controllerId);
     setPairingControllerId(controllerId);
   };
 
   const handleCancelPairing = () => {
+    console.log("[App] CANCEL PAIRING - Closing pairing UI");
     setPairingControllerId(null);
   };
 
