@@ -4,6 +4,11 @@ import { Badge } from "./ui/badge";
 import { ScrollArea } from "./ui/scroll-area";
 import { Checkbox } from "./ui/checkbox";
 
+interface Controller {
+  id: string;
+  name: string;
+}
+
 interface Robot {
   id: string;
   name: string;
@@ -17,6 +22,7 @@ interface Robot {
 
 interface ConnectionPanelProps {
   robots: Robot[];
+  controllers?: Controller[];
   selectedRobots: string[];
   onConnect: (id: string) => void;
   onDisconnect: (id: string) => void;
@@ -25,7 +31,13 @@ interface ConnectionPanelProps {
   onToggleSelection: (id: string) => void;
 }
 
-export function ConnectionPanel({ robots, selectedRobots, onConnect, onDisconnect, onRefresh, onDisable, onToggleSelection }: ConnectionPanelProps) {
+export function ConnectionPanel({ robots, controllers = [], selectedRobots, onConnect, onDisconnect, onRefresh, onDisable, onToggleSelection }: ConnectionPanelProps) {
+  const getControllerName = (controllerId?: string) => {
+    if (!controllerId) return null;
+    const controller = controllers.find(c => c.id === controllerId);
+    return controller ? controller.name : controllerId;
+  };
+
   return (
     <div className="h-full flex flex-col backdrop-blur-md bg-black/30 border border-white/10 rounded-lg p-4 overflow-hidden">
       <div className="flex items-center justify-between mb-4 shrink-0">
@@ -91,7 +103,9 @@ export function ConnectionPanel({ robots, selectedRobots, onConnect, onDisconnec
               <div className="text-xs text-gray-300 mb-2">
                 {robot.ipAddress}
                 {robot.pairedControllerId && (
-                  <span className="ml-2 text-cyan-400">• Paired</span>
+                  <span className="ml-2 text-cyan-400">
+                    🎮 {getControllerName(robot.pairedControllerId)}
+                  </span>
                 )}
               </div>
               {robot.signal && !robot.disabled && (

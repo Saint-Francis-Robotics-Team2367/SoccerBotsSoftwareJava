@@ -461,6 +461,7 @@ export default function App() {
           <div className="flex-1 min-h-0">
             <ConnectionPanel
               robots={robots}
+              controllers={controllers}
               selectedRobots={selectedRobots}
               onConnect={handleConnect}
               onDisconnect={handleDisconnect}
